@@ -8,6 +8,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -24,6 +27,20 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+
+      - name: Setup winCodeSign Cache (Bypass Symlinks)
+        shell: pwsh
+        run: |
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d 1
+          $cacheDir = "$env:LOCALAPPDATA\electron-builder\cache\winCodeSign"
+          New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+          $destDir = "$cacheDir\winCodeSign-2.6.0"
+          if (!(Test-Path "$destDir\rcedit-x64.exe")) {
+            Write-Host "Pre-extracting winCodeSign without darwin symlinks..."
+            $zipPath = "$cacheDir\winCodeSign-2.6.0.7z"
+            Invoke-WebRequest -Uri "https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z" -OutFile $zipPath
+            7z x $zipPath -o"$destDir" -xr!*darwin* -y
+          }
 
       - name: Install dependencies
         run: npm ci
@@ -77,7 +94,6 @@ jobs:
             release/*.deb
             release/*.rpm
             release/*.tar.gz
-            release/*.AppImage
           if-no-files-found: warn
 
   build-mac:
@@ -97,7 +113,7 @@ jobs:
         run: npm ci
 
       - name: Build macOS Installer
-        run: npm run build:mac
+        run: npx electron-builder --mac -c.mac.identity=null
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -107,6 +123,63 @@ jobs:
           name: Elix-IDE-Mac-Installer
           path: |
             release/*Setup*.dmg
+            release/*Setup*.zip
             release/*.dmg
             release/*.zip
           if-no-files-found: warn
+
+  publish-release:
+    name: Publish Release Assets
+    needs: [build-windows, build-linux, build-mac]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: Elix-IDE-Windows-Setup
+          path: release-assets
+
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: Elix-IDE-Linux-Packages
+          path: release-assets
+
+      - name: Download Mac Artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: Elix-IDE-Mac-Installer
+          path: release-assets
+
+      - name: Check Release Assets
+        run: |
+          mkdir -p release-assets
+          ls -la release-assets/
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "Elix IDE v1.0.0 — Production Release"
+          draft: false
+          prerelease: false
+          body: |
+            ## Elix IDE v1.0.0 — Official Release
+
+            Universal AI Development Environment, AI Agent & Career Practice Platform.
+
+            ### Package Matrix:
+            - **Windows**: `Elix-IDE-Setup.exe` (NSIS Full Installer)
+            - **Linux**: `Elix-IDE-Setup.deb` (Debian / Ubuntu / Mint)
+            - **Linux**: `Elix-IDE-Setup.rpm` (Fedora / RHEL / openSUSE)
+            - **Linux**: `Elix-IDE-Setup.tar.gz` (Universal Portable Archive)
+            - **macOS**: `Elix-IDE-Setup.dmg` & `Elix-IDE-Setup.zip` (Universal Intel + Apple Silicon)
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

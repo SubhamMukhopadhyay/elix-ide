@@ -45,6 +45,7 @@
       "icon": "public/icon.png",
       "category": "public.app-category.developer-tools",
       "artifactName": "Elix-IDE-Setup.${ext}",
+      "identity": null,
       "target": [
         "dmg",
         "zip"
@@ -58,7 +59,6 @@
       "description": "Universal Development Environment, AI Agent & Career Practice Platform",
       "artifactName": "Elix-IDE-Setup.${ext}",
       "target": [
-        "AppImage",
         "deb",
         "rpm",
         "tar.gz"
