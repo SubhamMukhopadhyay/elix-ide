@@ -8,11 +8,11 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-0b132b)](https://github.com/SubhamMukhopadhyay/elix-ide/releases)
 [![Electron](https://img.shields.io/badge/Electron-34.5-47848F?logo=electron&logoColor=white)](https://electronjs.org/)
 [![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.52-blue)](https://microsoft.github.io/monaco-editor/)
-[![License](https://img.shields.io/badge/License-MIT-purple)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
 **Elix IDE** is a modern, high-performance desktop development environment engineered for developers, students, and engineers. It combines a zero-config universal compiler toolchain, an autonomous AI pair-programming agent, an interactive mobile device simulator, and a comprehensive DSA career practice hub into a single, unified workspace.
 
-[Download](#downloads) • [Features](#key-features) • [Getting Started](#getting-started) • [Building from Source](#building-from-source)
+[Downloads](#downloads) • [Key Features](#key-features) • [Keyboard Shortcuts](#keyboard-shortcuts) • [Architecture](#architecture--system-foundation)
 
 </div>
 
@@ -95,80 +95,34 @@ Prepare for technical interviews directly inside your IDE:
 
 ---
 
-## Getting Started
-
-### Prerequisites
-* [Node.js](https://nodejs.org/) (version 18.0 or higher)
-* [Git](https://git-scm.com/)
-
-### Clone the Repository
-```bash
-git clone https://github.com/SubhamMukhopadhyay/elix-ide.git
-cd elix-ide
-```
-
-### Install Dependencies
-```bash
-npm install
-```
-
-### Launch in Development Mode
-```bash
-npm run dev
-```
-
----
-
-## Building from Source
-
-### Windows Installer (`.exe`)
-```bash
-npm run build:installer
-```
-Outputs the NSIS setup wizard (`Elix-IDE-Setup.exe`) to the `release/` directory.
-
-### Linux Packages (`.deb`, `.rpm`, `.tar.gz`)
-```bash
-npm run build:linux
-```
-Outputs `Elix-IDE-Setup.deb`, `Elix-IDE-Setup.rpm`, and `Elix-IDE-Setup.tar.gz` to the `release/` directory.
-
-### macOS Image (`.dmg`)
-```bash
-npm run build:mac
-```
-Outputs `Elix-IDE-Setup.dmg` to the `release/` directory.
-
----
-
-## Architecture & Tech Stack
+## Architecture & System Foundation
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                          Elix IDE                           │
 ├──────────────────────────────┬──────────────────────────────┤
-│ Frontend Shell & UI          │ Core Desktop Process         │
-│ • React 18 + TypeScript      │ • Electron 34                │
-│ • Monaco Editor 0.52         │ • Node.js Native IPC         │
-│ • Tailwind CSS               │ • SQLite Local Storage       │
+│ Frontend Shell & Workspace   │ Core Desktop Process         │
+│ • React 18 + TypeScript      │ • Electron 34 Architecture   │
+│ • Monaco Editor 0.52 Engine  │ • Native Platform IPC Layer  │
+│ • Tailwind CSS Theme System  │ • SQLite Local Storage Engine│
 │ • xterm.js Terminal Engine   │ • Git Integration Layer     │
-│ • Vite 6 Build Pipeline      │ • Multi-Runtime Discovery    │
+│ • Fast Vite Build Pipeline   │ • Multi-Runtime Discovery    │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
 ---
 
-## Contributing
+## Security & Privacy
 
-Contributions, feature suggestions, and pull requests are warmly welcome!
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m "feat: Add amazing feature"`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+* **Local-First Execution**: Your source code, files, and project directories remain on your local machine.
+* **Controlled AI Sharing**: The integrated AI agent only accesses files and terminal logs that you explicitly attach or mention with `@`.
+* **Zero Telemetry Leaks**: Execution sandbox runs locally without streaming code to third-party tracking servers.
 
 ---
 
-## License
+## License & Copyright
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+Copyright © 2026 Elix Team. All rights reserved.
+
+Elix IDE is proprietary software. Unauthorized copying, distribution, modification, reverse engineering, or public mirroring of this software and source code via any medium is strictly prohibited.
+

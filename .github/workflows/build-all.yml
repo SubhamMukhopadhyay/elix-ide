@@ -8,11 +8,15 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: false
+
 jobs:
   build-windows:
+    name: Build Windows (.exe)
     runs-on: windows-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -26,17 +30,21 @@ jobs:
 
       - name: Build Windows Installer
         run: npm run build:installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload Windows Setup Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Elix-IDE-Windows-Setup
-          path: release/*.exe
+          path: release/*Setup*.exe
+          if-no-files-found: warn
 
   build-linux:
+    name: Build Linux (.deb, .rpm, .tar.gz)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -45,31 +53,38 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install native build dependencies
+      - name: Install native packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm fakeroot
+          sudo apt-get install -y rpm fakeroot libfuse2 desktop-file-utils
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Linux (.deb, .rpm, .AppImage, .tar.gz)
+      - name: Build Linux Packages
         run: npm run build:linux
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload Linux Packages Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Elix-IDE-Linux-Packages
           path: |
+            release/*Setup*.deb
+            release/*Setup*.rpm
+            release/*Setup*.tar.gz
             release/*.deb
             release/*.rpm
-            release/*.AppImage
             release/*.tar.gz
+            release/*.AppImage
+          if-no-files-found: warn
 
   build-mac:
+    name: Build macOS (.dmg)
     runs-on: macos-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -81,14 +96,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build macOS (.dmg, .zip)
+      - name: Build macOS Installer
         run: npm run build:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Elix-IDE-Mac-Installer
           path: |
+            release/*Setup*.dmg
             release/*.dmg
             release/*.zip
-
+          if-no-files-found: warn
