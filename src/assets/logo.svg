@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="245 190 300 300" width="800" height="800" fill="none">
+  <!-- Precision Minimalist Monogram: Geometric 'E' + Code Bracket (Transparent Background, like VS Code) -->
+  <g id="brand-symbol">
+    <!-- Floating Top Bar of 'E' -->
+    <path d="M 280 220 L 510 220" stroke="#F1F5F9" stroke-width="24" stroke-linecap="round" />
+
+    <!-- Center Segment: Syntax bracket arm `<` forming middle bar -->
+    <path d="M 370 295 L 305 340 L 370 385" stroke="#E2E8F0" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 305 340 L 460 340" stroke="#E2E8F0" stroke-width="24" stroke-linecap="round" />
+
+    <!-- Bottom Structural Base of 'E' -->
+    <path d="M 280 460 L 510 460" stroke="#F1F5F9" stroke-width="24" stroke-linecap="round" />
+
+    <!-- Vertical Spine -->
+    <path d="M 280 220 L 280 460" stroke="#F1F5F9" stroke-width="24" stroke-linecap="round" />
+
+    <!-- Signature Accent: Single electric cyan status pulse / prompt dot -->
+    <circle cx="505" cy="340" r="14" fill="#00E5FF" />
+  </g>
+</svg>
