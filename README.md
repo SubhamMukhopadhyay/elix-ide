@@ -1,76 +1,174 @@
-# Elix IDE — Universal Development Environment & Career Platform
+<div align="center">
 
-[![Build Status](https://img.shields.io/badge/Build-Passing-emerald)](https://github.com/elix-ide)
-[![Version](https://img.shields.io/badge/Version-1.0.0-cyan)](https://github.com/elix-ide)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-blue)](https://github.com/elix-ide)
+# Elix IDE
+
+### The Universal AI-Powered Development Environment
+
+[![Release](https://img.shields.io/github/v/release/SubhamMukhopadhyay/elix-ide?color=00e5ff&label=Version)](https://github.com/SubhamMukhopadhyay/elix-ide/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-0b132b)](https://github.com/SubhamMukhopadhyay/elix-ide/releases)
+[![Electron](https://img.shields.io/badge/Electron-34.5-47848F?logo=electron&logoColor=white)](https://electronjs.org/)
+[![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.52-blue)](https://microsoft.github.io/monaco-editor/)
 [![License](https://img.shields.io/badge/License-MIT-purple)](LICENSE)
 
-**Elix IDE** is a modern, professional, premium universal development environment combining a high-performance code editor, right-side AI coding agent, universal execution layer (local + cloud warm sandbox), offline capabilities, DSA practice bank with personalized goals, hackathon project manager, and career analytics.
+**Elix IDE** is a modern, high-performance desktop development environment engineered for developers, students, and engineers. It combines a zero-config universal compiler toolchain, an autonomous AI pair-programming agent, an interactive mobile device simulator, and a comprehensive DSA career practice hub into a single, unified workspace.
+
+[Download](#downloads) • [Features](#key-features) • [Getting Started](#getting-started) • [Building from Source](#building-from-source)
+
+</div>
 
 ---
 
-## ⚡ Core Philosophy: Zero-Configuration Execution
+## Downloads
 
-**Download Elix → Install → Open → Choose Category → Choose Technology → Create → Code → Run**
+Download the latest production release of Elix IDE for your operating system:
 
-You are never asked to manually install Python, configure JDK, install GCC/Clang, or edit system `PATH` variables. Elix handles runtime discovery, sandboxing, and execution automatically behind the scenes.
+| Operating System | Package Format | Target Architecture | Description |
+| :--- | :--- | :--- | :--- |
+| **Windows 10, 11** | `Elix-IDE-Setup.exe` | `x64` | Full installer wizard with custom directory picker & clean uninstaller |
+| **Ubuntu / Debian / Mint** | `Elix-IDE-Setup.deb` | `amd64` | Native Debian package for 1-click system installation |
+| **Fedora / RHEL / openSUSE** | `Elix-IDE-Setup.rpm` | `x86_64` | Native Red Hat package manager binary |
+| **Universal Linux** | `Elix-IDE-Setup.tar.gz` | `x64` | Portable install-free archive (extract and run on any Linux distro) |
+| **macOS (Apple)** | `Elix-IDE-Setup.dmg` | `Universal (ARM/Intel)` | Drag-and-drop installer image for macOS 12.0+ |
 
----
-
-## 🚀 Key Features
-
-* **Universal Execution Layer:**
-  - Automatic detection of local and bundled runtimes (Node.js, Python 3.12, OpenJDK 17 LTS, C/C++ compiler toolchain).
-  - Warm Cloud Sandbox fallback when local runtimes are missing and internet is available.
-  - Seamless Online, Local, and Offline state handling with clear user guidance.
-* **Category-First Workflow:**
-  - Built-in categories: Web Development, Python & AI, Java, C/C++, Rust, Go, .NET / C#, Mobile Development, Game Dev, Desktop Apps, Backend & APIs, AI/ML, Practice & Career, Hackathons.
-  - Custom user-created categories with custom icons, descriptions, and non-exclusive tagging.
-* **Professional Editor Workspace:**
-  - Multi-tab file manager with Monaco Editor.
-  - Split view with live integrated Web Preview and Expo-like Mobile Device Simulator (iPhone 16 / Pixel 8 frame with QR code).
-  - Breadcrumb navigation, minimap, syntax highlighting, and formatting.
-* **Bottom Execution & Terminal Panel:**
-  - Real interactive PowerShell / shell terminal tabs.
-  - Live execution output with process metrics, exit codes, and timestamps.
-  - Problems tab with instant linting and error inspection.
-  - Dev server port exposure tracking.
-* **Dedicated AI Coding Agent:**
-  - Docked right-hand agent supporting Google Gemini, OpenAI, Claude, and Mistral.
-  - Permission levels: Read-only, Read + Analyze, Edit Files, Run Commands, Full Agent.
-  - Multi-step planning with execution tracking.
-  - Atomic visual diff review before applying code modifications (Accept, Reject, Review).
-  - AI Practice Mentor with Hint, Guided, Explain, and Interview modes.
-* **🎯 Practice & Career Hub:**
-  - Extensible Question Bank across DSA, Problem Solving, OOP, DBMS, OS, Computer Networks, and System Design.
-  - Separation of central question bank (10,000+ questions) from individual user practice goals (e.g. 127/300 solved).
-  - In-IDE code testing with instant test case runner, runtime, and memory metrics.
-  - Verified Strength/Weakness analysis and Level Engine (Beginner, Intermediate, Advanced, Expert).
-* **🏆 Hackathons Sprint Hub:**
-  - Sprints tracker with team members, deadlines, countdowns, and task boards.
-* **💼 Career Dashboard & Streaks:**
-  - 28-day active heatmap calendar.
-  - Skill competency matrix.
-  - 1-click resume bullet point export.
-* **Project Time Machine:**
-  - Snapshots captured before runs or AI edits with 1-click rollback.
+All release packages and checksums are published under [GitHub Releases](https://github.com/SubhamMukhopadhyay/elix-ide/releases).
 
 ---
 
-## 🛠️ Quick Launch
+## Key Features
 
-### Running the Pre-Packaged Application
-```powershell
-& "D:\Engineering\Project\Elex IDE\release\Elix-IDE-win32-x64\Elix IDE.exe"
+### 1. Universal Zero-Config Execution Layer
+No more fighting environment variables or missing toolchains:
+* **Automatic Discovery**: Automatically detects local compilers for C/C++ (MinGW/GCC/Clang), Python 3, OpenJDK, Rust, Go, and Node.js.
+* **Warm Cloud Sandbox**: Intelligent online execution fallback when local runtimes are unavailable, ensuring code runs anywhere on day one.
+* **Integrated Interactive Terminal**: Native xterm.js terminal emulator wired directly to your platform's native shell (PowerShell, Bash, or Zsh).
+
+### 2. Autonomous AI Pair-Programming Agent
+A deeply integrated coding copilot that understands your project context:
+* **Context Mentions (`@`)**:
+  * `@Codebase` — References and searches the entire repository structure.
+  * `@CurrentFile` — Attaches the active editor file and cursor context.
+  * `@Terminal` — Pulls recent terminal output, stack traces, and compiler errors.
+  * `@GitDiff` — Inspects working tree changes and staged modifications.
+  * `@Docs` — References language-specific documentation and API signatures.
+* **Quick Slash Actions (`/`)**:
+  * `/explain` — Step-by-step code architecture and data flow walkthrough.
+  * `/fix` — Automatic bug detection, linter resolution, and patch generation.
+  * `/test` — Generates comprehensive unit and integration test suites with edge cases.
+  * `/refactor` — Modernizes code structure, cleans complexity, and optimizes performance.
+  * `/doc` — Generates precise JSDoc, Docstrings, and markdown documentation.
+  * `/clear` — Cleans conversation history and resets session memory.
+* **Atomic Visual Diff Review**: All AI-proposed file edits are rendered with side-by-side colorized diffs (`Accept & Apply` or `Reject`).
+
+### 3. Interactive Virtual Mobile Simulator
+Built specifically for mobile and frontend developers working with React Native, Flutter, and web frameworks:
+* **Side-by-Side Split View**: Code on the left in Monaco Editor while previewing the live app on the right.
+* **Realistic Device Frames**: Switch between iPhone 16 Pro and Google Pixel 8 frames complete with Dynamic Island, screen curvature, and orientation toggle.
+* **Live LAN Wi-Fi QR Code**: Scan with your physical phone to test Expo Go, Flutter web, or local network servers instantly.
+
+### 4. DSA & Technical Interview Practice Hub
+Prepare for technical interviews directly inside your IDE:
+* **1,000+ Curated Problems**: Comprehensive coverage of Data Structures, Algorithms, System Design, OOP, DBMS, and Computer Networks.
+* **Automated Test Runner**: Execute your solution against hidden test cases with execution time and memory benchmarks.
+* **Daily Streaks & Competency Matrix**: Track your solving velocity, streak calendar, and topic mastery.
+
+### 5. Local Time Machine
+* Instant snapshots created before significant refactors or AI modifications.
+* 1-click rollback restores prior workspace state without git commit overhead.
+
+### 6. Native Desktop Polish
+* **Dynamic TitleBar Sync**: On Windows 11, the native window caption controls (Minimize, Maximize, Close) dynamically match dark, light, and custom IDE themes.
+* **Industry Standard Iconography**: Integrated Seti file icon themes and full Monaco Editor keybindings (`Ctrl+P`, `Ctrl+Shift+P`, `Ctrl+\``).
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+| :--- | :--- |
+| `Ctrl + P` | Quick Open File by Name |
+| `Ctrl + Shift + P` | Command Palette |
+| `Ctrl + \`` | Toggle Interactive Terminal |
+| `Ctrl + B` | Toggle Primary Sidebar |
+| `Ctrl + Shift + F` | Global Project Search |
+| `Ctrl + Shift + L` | Toggle AI Agent Panel |
+| `Ctrl + S` | Save Active File |
+
+---
+
+## Getting Started
+
+### Prerequisites
+* [Node.js](https://nodejs.org/) (version 18.0 or higher)
+* [Git](https://git-scm.com/)
+
+### Clone the Repository
+```bash
+git clone https://github.com/SubhamMukhopadhyay/elix-ide.git
+cd elix-ide
 ```
 
-### Developing from Source
-```powershell
+### Install Dependencies
+```bash
 npm install
+```
+
+### Launch in Development Mode
+```bash
 npm run dev
 ```
 
-### Re-packaging the Executable
-```powershell
-node scripts/build-win.js
+---
+
+## Building from Source
+
+### Windows Installer (`.exe`)
+```bash
+npm run build:installer
 ```
+Outputs the NSIS setup wizard (`Elix-IDE-Setup.exe`) to the `release/` directory.
+
+### Linux Packages (`.deb`, `.rpm`, `.tar.gz`)
+```bash
+npm run build:linux
+```
+Outputs `Elix-IDE-Setup.deb`, `Elix-IDE-Setup.rpm`, and `Elix-IDE-Setup.tar.gz` to the `release/` directory.
+
+### macOS Image (`.dmg`)
+```bash
+npm run build:mac
+```
+Outputs `Elix-IDE-Setup.dmg` to the `release/` directory.
+
+---
+
+## Architecture & Tech Stack
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                          Elix IDE                           │
+├──────────────────────────────┬──────────────────────────────┤
+│ Frontend Shell & UI          │ Core Desktop Process         │
+│ • React 18 + TypeScript      │ • Electron 34                │
+│ • Monaco Editor 0.52         │ • Node.js Native IPC         │
+│ • Tailwind CSS               │ • SQLite Local Storage       │
+│ • xterm.js Terminal Engine   │ • Git Integration Layer     │
+│ • Vite 6 Build Pipeline      │ • Multi-Runtime Discovery    │
+└──────────────────────────────┴──────────────────────────────┘
+```
+
+---
+
+## Contributing
+
+Contributions, feature suggestions, and pull requests are warmly welcome!
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m "feat: Add amazing feature"`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
