@@ -2,18 +2,21 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { rcedit } from 'rcedit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+const appIconPath = path.join(rootDir, 'public', 'app-icon.ico');
+const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
 
-console.log('⚡ [1/5] Building Vite frontend and Electron bundles...');
+console.log('⚡ [1/6] Building Vite frontend and Electron bundles...');
 execSync('npx vite build', { cwd: rootDir, stdio: 'inherit' });
 
 const releaseDir = path.join(rootDir, 'release', 'Elix-IDE-win32-x64');
 const electronDist = path.join(rootDir, 'node_modules', 'electron', 'dist');
 
-console.log('📦 [2/5] Assembling unpacked release directory at:', releaseDir);
+console.log('📦 [2/6] Assembling unpacked release directory at:', releaseDir);
 const rootVideoDir = path.join(rootDir, 'Video');
 const releaseVideoDir = path.join(releaseDir, 'Video');
 
@@ -31,7 +34,6 @@ if (process.platform === 'win32') {
   try {
     execSync('powershell -NoProfile -Command "taskkill /F /IM \'Elix IDE.exe\' /T"', { stdio: 'ignore' });
   } catch {}
-  // Give Windows 1 second to release locked file handles
   try {
     execSync('powershell -NoProfile -Command "Start-Sleep -Seconds 1"', { stdio: 'ignore' });
   } catch {}
@@ -41,14 +43,14 @@ const oldExe = path.join(releaseDir, 'electron.exe');
 const newExe = path.join(releaseDir, 'Elix IDE.exe');
 
 if (!fs.existsSync(newExe)) {
-  console.log('📋 [3/5] Copying Electron binaries and dependencies...');
+  console.log('📋 [3/6] Copying Electron binaries and dependencies...');
   fs.mkdirSync(releaseDir, { recursive: true });
   fs.cpSync(electronDist, releaseDir, { recursive: true });
   if (fs.existsSync(oldExe)) {
     fs.renameSync(oldExe, newExe);
   }
 } else {
-  console.log('⚡ [3/5] Electron runtime binaries already present, updating application payload...');
+  console.log('⚡ [3/6] Electron runtime binaries already present, updating application payload...');
 }
 
 // Remove default_app.asar if present
@@ -78,7 +80,36 @@ if (fs.existsSync(rootVideoDir)) {
   fs.cpSync(rootVideoDir, releaseVideoDir, { recursive: true });
 }
 
-console.log('📦 [4/5] Packaging app payload archive...');
+// Stamp Elix IDE.exe with official Elix metadata and multi-res icon
+console.log('🎨 [4/6] Stamping Windows PE resources and custom branding on Elix IDE.exe...');
+try {
+  await rcedit(newExe, {
+    'icon': appIconPath,
+    'version-string': {
+      'CompanyName': 'Elix Technologies',
+      'FileDescription': 'Elix IDE',
+      'ProductName': 'Elix IDE',
+      'LegalCopyright': 'Copyright (C) 2026 Elix Technologies',
+      'OriginalFilename': 'Elix IDE.exe',
+      'InternalName': 'Elix IDE'
+    },
+    'file-version': '1.0.0.0',
+    'product-version': '1.0.0.0'
+  });
+  console.log('✅ Elix IDE.exe branding stamped successfully.');
+} catch (err) {
+  console.warn('⚠️ Warning: rcedit on Elix IDE.exe encountered error:', err.message);
+}
+
+// Compile standalone uninstaller executable into the release directory
+console.log('🔨 Compiling standalone native uninstaller (Uninstall Elix IDE.exe)...');
+const uninstallerCs = path.join(rootDir, 'scripts', 'uninstaller.cs');
+const uninstallerExe = path.join(releaseDir, 'Uninstall Elix IDE.exe');
+const uninstallerCmd = `"${cscPath}" /nologo /target:winexe /out:"${uninstallerExe}" /r:System.Windows.Forms.dll,System.Drawing.dll /win32icon:"${appIconPath}" "${uninstallerCs}"`;
+execSync(uninstallerCmd, { cwd: rootDir, stdio: 'inherit' });
+console.log('✅ Uninstaller compiled to:', uninstallerExe);
+
+console.log('📦 [5/6] Packaging app payload archive...');
 if (process.platform === 'win32') {
   try {
     execSync('powershell -NoProfile -Command "Get-Process -Name \'Elix IDE\' -ErrorAction SilentlyContinue | Stop-Process -Force"', { stdio: 'ignore' });
@@ -97,13 +128,31 @@ const zipCmd = `powershell -NoProfile -Command "Compress-Archive -Path '${releas
 console.log('Compressing files into setup payload archive...');
 execSync(zipCmd, { cwd: rootDir, stdio: 'inherit' });
 
-console.log('🔨 [5/5] Compiling native Windows Setup Wizard (Elix-IDE-Setup.exe)...');
-const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
+console.log('🔨 [6/6] Compiling native Windows Setup Wizard (Elix-IDE-Setup.exe)...');
 const setupExe = path.join(rootDir, 'release', 'Elix-IDE-Setup.exe');
 const installerCs = path.join(rootDir, 'scripts', 'installer.cs');
 
-const compileCmd = `"${cscPath}" /nologo /target:winexe /out:"${setupExe}" /r:System.Windows.Forms.dll,System.Drawing.dll,System.IO.Compression.dll,System.IO.Compression.FileSystem.dll /resource:"${payloadZip}" "${installerCs}"`;
+const compileCmd = `"${cscPath}" /nologo /target:winexe /out:"${setupExe}" /r:System.Windows.Forms.dll,System.Drawing.dll,System.IO.Compression.dll,System.IO.Compression.FileSystem.dll /win32icon:"${appIconPath}" /resource:"${payloadZip}" "${installerCs}"`;
 execSync(compileCmd, { cwd: rootDir, stdio: 'inherit' });
+
+// Stamp setupExe with Elix Setup metadata
+try {
+  await rcedit(setupExe, {
+    'icon': appIconPath,
+    'version-string': {
+      'CompanyName': 'Elix Technologies',
+      'FileDescription': 'Elix IDE Setup',
+      'ProductName': 'Elix IDE Setup',
+      'LegalCopyright': 'Copyright (C) 2026 Elix Technologies',
+      'OriginalFilename': 'Elix-IDE-Setup.exe',
+      'InternalName': 'Elix-IDE-Setup'
+    },
+    'file-version': '1.0.0.0',
+    'product-version': '1.0.0.0'
+  });
+} catch (err) {
+  console.warn('⚠️ Warning: rcedit on setupExe encountered error:', err.message);
+}
 
 // Remove temporary payload zip after embedding
 if (fs.existsSync(payloadZip)) {
@@ -113,5 +162,6 @@ if (fs.existsSync(payloadZip)) {
 console.log('\n🎉 ALL DONE — ELIX IDE PROFESSIONAL ARTIFACTS READY!');
 console.log('1. Professional Windows Setup Wizard: ' + setupExe);
 console.log('2. Unpacked Desktop Application:      ' + newExe);
+console.log('3. Standalone Native Uninstaller:    ' + uninstallerExe);
 console.log('\nYou can install via: & "' + setupExe + '"');
 console.log('Or launch directly:  & "' + newExe + '"\n');

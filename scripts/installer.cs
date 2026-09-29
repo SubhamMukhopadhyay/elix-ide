@@ -444,7 +444,16 @@ namespace ElixInstaller
                     key.SetValue("Publisher", "Elix Technologies");
                     key.SetValue("DisplayIcon", exe);
                     key.SetValue("InstallLocation", dir);
-                    key.SetValue("UninstallString", "cmd.exe /c rmdir /s /q \"" + dir + "\"");
+                    string uninstallerExe = Path.Combine(dir, "Uninstall Elix IDE.exe");
+                    if (File.Exists(uninstallerExe))
+                    {
+                        key.SetValue("UninstallString", "\"" + uninstallerExe + "\"");
+                        key.SetValue("QuietUninstallString", "\"" + uninstallerExe + "\" /quiet");
+                    }
+                    else
+                    {
+                        key.SetValue("UninstallString", "cmd.exe /c rmdir /s /q \"" + dir + "\"");
+                    }
                 }
             }
             catch { }

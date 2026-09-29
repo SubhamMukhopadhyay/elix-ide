@@ -24,8 +24,15 @@ export const elixAPI = {
     v8: process.versions.v8 || '13.2.0.0',
   }),
 
-  // Dialogs
+  // Dialogs & Launch
   openFolderDialog: () => ipcRenderer.invoke('dialog:openFolder'),
+  getLaunchPath: () => ipcRenderer.invoke('app:getLaunchPath'),
+  getPathInfo: (targetPath: string) => ipcRenderer.invoke('fs:getPathInfo', targetPath),
+  onOpenExternalPath: (callback: (targetPath: string) => void) => {
+    const handler = (_: any, targetPath: string) => callback(targetPath);
+    ipcRenderer.on('app:open-external-path', handler);
+    return () => ipcRenderer.removeListener('app:open-external-path', handler);
+  },
 
   // Categories & Projects
   getCategories: () => ipcRenderer.invoke('db:getCategories'),

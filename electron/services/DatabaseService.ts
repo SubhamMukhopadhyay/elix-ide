@@ -72,6 +72,58 @@ export class DatabaseService {
     ];
   }
 
+  private getDefaultHackathons(): HackathonItem[] {
+    return [
+      {
+        id: 'hack_genai_2026',
+        name: 'Global GenAI & Agentic Sprint 2026',
+        problemStatement: 'Build an autonomous multimodal agent or intelligent developer tool that enhances developer productivity and automates complex multi-step workflows.',
+        eventDate: '2026-10-24',
+        submissionDeadline: '2026-10-26T23:59:00',
+        team: {
+          name: 'Elix Innovators',
+          members: ['You (Lead Architect)', 'Alex (Frontend)', 'Maya (AI / ML)']
+        },
+        techStack: ['TypeScript', 'React', 'Python', 'Gemini API', 'TailwindCSS'],
+        tasks: [
+          { id: 't_ai_1', title: 'Define agent architecture & workflow graph', completed: true },
+          { id: 't_ai_2', title: 'Implement tool execution engine & API integration', completed: true },
+          { id: 't_ai_3', title: 'Build modern Monaco-powered UI & prompt panel', completed: false },
+          { id: 't_ai_4', title: 'Record 3-minute video demo & publish repository', completed: false }
+        ],
+        milestones: [
+          { id: 'm_ai_1', title: 'Architecture Proposal & Design Doc', dueDate: '2026-10-24', completed: true },
+          { id: 'm_ai_2', title: 'Working Prototype & Tool Validation', dueDate: '2026-10-25', completed: false },
+          { id: 'm_ai_3', title: 'Final Pitch & Project Submission', dueDate: '2026-10-26', completed: false }
+        ],
+        status: 'In Progress',
+        demoUrl: 'https://github.com/SubhamMukhopadhyay/elix-ide'
+      },
+      {
+        id: 'hack_fullstack_2026',
+        name: 'Next-Gen Cloud & Real-Time Web Sprint',
+        problemStatement: 'Design and deploy a resilient real-time web application featuring collaborative editing, live state synchronization, and zero-latency performance.',
+        eventDate: '2026-11-12',
+        submissionDeadline: '2026-11-14T18:00:00',
+        team: {
+          name: 'Async Core',
+          members: ['You', 'Dev Team']
+        },
+        techStack: ['Next.js', 'Go', 'WebSockets', 'PostgreSQL', 'Docker'],
+        tasks: [
+          { id: 't_fs_1', title: 'Database schema & WebSocket pub/sub design', completed: false },
+          { id: 't_fs_2', title: 'Frontend collaboration client & optimistic UI', completed: false },
+          { id: 't_fs_3', title: 'Benchmarking & deployment on Cloud Run', completed: false }
+        ],
+        milestones: [
+          { id: 'm_fs_1', title: 'MVP Deployment', dueDate: '2026-11-13', completed: false },
+          { id: 'm_fs_2', title: 'Final Demo Video', dueDate: '2026-11-14', completed: false }
+        ],
+        status: 'Upcoming'
+      }
+    ];
+  }
+
   private loadDatabase(): DatabaseSchema {
     if (fs.existsSync(this.dbPath)) {
       try {
@@ -92,7 +144,7 @@ export class DatabaseService {
           questions: parsed.questions || [],
           goals: parsed.goals || [],
           submissions: parsed.submissions || [],
-          hackathons: parsed.hackathons || [],
+          hackathons: (parsed.hackathons && parsed.hackathons.length > 0) ? parsed.hackathons : this.getDefaultHackathons(),
           snapshots: parsed.snapshots || [],
           aiConfig: parsed.aiConfig || {
             provider: 'gemini',
@@ -121,7 +173,7 @@ export class DatabaseService {
       questions: [],
       goals: [],
       submissions: [],
-      hackathons: [],
+      hackathons: this.getDefaultHackathons(),
       snapshots: [],
       aiConfig: {
         provider: 'gemini',

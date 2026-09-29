@@ -13,7 +13,56 @@ import { TimeMachineService } from './services/TimeMachineService';
 import { TerminalService } from './services/TerminalService';
 import { PracticeRunnerService } from './services/PracticeRunnerService';
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.elix.ide');
+}
+
 let mainWindow: BrowserWindow | null = null;
+let initialLaunchPath: string | null = null;
+
+function parsePathArg(args: string[]): string | null {
+  if (!args || args.length === 0) return null;
+  const sliceIndex = app.isPackaged ? 1 : 2;
+  const candidateArgs = args.slice(sliceIndex);
+  for (const arg of candidateArgs) {
+    if (!arg || arg.startsWith('--') || arg.startsWith('-')) continue;
+    try {
+      const resolved = path.resolve(arg);
+      if (fs.existsSync(resolved)) {
+        return resolved;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+initialLaunchPath = parsePathArg(process.argv);
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      const targetPath = parsePathArg(commandLine);
+      if (targetPath) {
+        mainWindow.webContents.send('app:open-external-path', targetPath);
+      }
+    }
+  });
+}
+
+// macOS open-file event
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('app:open-external-path', filePath);
+  } else {
+    initialLaunchPath = filePath;
+  }
+});
 
 function createWindow() {
   const iconPath = fs.existsSync(path.join(__dirname, '../public/app-icon.ico'))
@@ -140,6 +189,29 @@ app.whenReady().then(() => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('execution:event', event);
     }
+  });
+
+  // --- Launch & Path Handlers ---
+  ipcMain.handle('app:getLaunchPath', () => {
+    const p = initialLaunchPath;
+    initialLaunchPath = null;
+    return p;
+  });
+
+  ipcMain.handle('fs:getPathInfo', (_, targetPath: string) => {
+    try {
+      if (targetPath && fs.existsSync(targetPath)) {
+        const stat = fs.statSync(targetPath);
+        return {
+          exists: true,
+          isDirectory: stat.isDirectory(),
+          isFile: stat.isFile(),
+          name: path.basename(targetPath),
+          dir: stat.isDirectory() ? targetPath : path.dirname(targetPath)
+        };
+      }
+    } catch {}
+    return { exists: false, isDirectory: false, isFile: false, name: '', dir: '' };
   });
 
   // --- Window Controls ---

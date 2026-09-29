@@ -21,6 +21,9 @@ interface Window {
       v8: string;
     };
     openFolderDialog: () => Promise<string | null>;
+    getLaunchPath?: () => Promise<string | null>;
+    getPathInfo?: (targetPath: string) => Promise<{ exists: boolean; isDirectory: boolean; isFile: boolean; name: string; dir: string }>;
+    onOpenExternalPath?: (callback: (targetPath: string) => void) => () => void;
     getCategories: () => Promise<any[]>;
     addCategory: (cat: any) => Promise<any>;
     updateCategory: (id: string, updates: any) => Promise<any>;

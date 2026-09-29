@@ -257,19 +257,182 @@ export const App: React.FC = () => {
     }
   };
 
+  // Helper to find the best primary file to auto-open in a folder
+  const findPrimaryFile = (items: Array<{ name: string; isDirectory: boolean; path: string }>) => {
+    const files = items.filter(i => !i.isDirectory && !i.name.startsWith('.'));
+    if (files.length === 0) return null;
+
+    // Filter out binaries / compiled files
+    const nonBinaries = files.filter(f => {
+      const ext = f.name.toLowerCase().split('.').pop() || '';
+      return !['exe', 'dll', 'so', 'dylib', 'bin', 'o', 'obj', 'class', 'pyc', 'zip', 'tar', 'gz'].includes(ext);
+    });
+    if (nonBinaries.length === 0) return null;
+
+    // Priority 1: Main entry points
+    const entrypoint = nonBinaries.find(f => /^(main|index|app|server|run)\.[a-z0-9]+$/i.test(f.name));
+    if (entrypoint) return entrypoint;
+
+    // Priority 2: Primary source code files
+    const codeFile = nonBinaries.find(f => {
+      const ext = f.name.toLowerCase().split('.').pop() || '';
+      return ['cpp', 'c', 'h', 'hpp', 'py', 'js', 'ts', 'tsx', 'jsx', 'java', 'rs', 'go', 'cs', 'html', 'css'].includes(ext);
+    });
+    if (codeFile) return codeFile;
+
+    // Priority 3: Readme files
+    const readme = nonBinaries.find(f => f.name.toLowerCase().startsWith('readme'));
+    if (readme) return readme;
+
+    // Priority 4: First readable non-binary file
+    return nonBinaries[0];
+  };
+
+  // Open File into Tab
+  const handleOpenFile = useCallback(async (filePath: string, fileName: string) => {
+    if (!window.elix) return;
+    const cleanPath = filePath.replace(/\\/g, '/');
+
+    const ext = fileName.toLowerCase().split('.').pop() || '';
+    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'bmp', 'svg', 'avif'].includes(ext);
+    const isPdf = ext === 'pdf';
+    const isDocx = ['docx', 'doc'].includes(ext);
+    const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+    const isAudio = ['mp3', 'wav', 'aac'].includes(ext);
+    const isBinary = isImage || isPdf || isDocx || isVideo || isAudio;
+
+    if (isBinary) {
+      const [base64Url, stats] = await Promise.all([
+        window.elix.readFileBase64 ? window.elix.readFileBase64(cleanPath) : null,
+        window.elix.getFileStats ? window.elix.getFileStats(cleanPath) : null
+      ]);
+
+      const newTab: EditorTab = {
+        id: cleanPath,
+        name: fileName,
+        path: cleanPath,
+        content: '',
+        isDirty: false,
+        isBinary: true,
+        mediaType: isImage ? 'image' : isPdf ? 'pdf' : isDocx ? 'docx' : isVideo ? 'video' : 'audio',
+        base64Url: base64Url || `file:///${cleanPath.replace(/\\/g, '/')}`,
+        fileSize: stats?.size || 0
+      };
+
+      setTabs(prev => {
+        const nonWelcome = prev.filter(t => !t.isWelcome && t.id !== 'welcome');
+        if (nonWelcome.some(t => t.id === newTab.id)) {
+          return nonWelcome;
+        }
+        return [...nonWelcome, newTab];
+      });
+      setActiveTabId(newTab.id);
+      return;
+    }
+
+    const content = await window.elix.readFile(cleanPath);
+    if (typeof content === 'string') {
+      const newTab: EditorTab = {
+        id: cleanPath,
+        name: fileName,
+        path: cleanPath,
+        content,
+        isDirty: false
+      };
+      setTabs(prev => {
+        const nonWelcome = prev.filter(t => !t.isWelcome && t.id !== 'welcome');
+        if (nonWelcome.some(t => t.id === newTab.id)) {
+          return nonWelcome;
+        }
+        return [...nonWelcome, newTab];
+      });
+      setActiveTabId(newTab.id);
+    }
+  }, []);
+
+  // Open Folder / Project with smart auto-file opening
+  const openFolderPath = useCallback(async (folderPath: string, specificFileToOpen?: string) => {
+    if (!window.elix) return;
+    const cleanPath = folderPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const folderName = cleanPath.split('/').pop() || 'Workspace';
+
+    const proj: ProjectMetadata = {
+      id: `proj_${Date.now()}`,
+      name: folderName,
+      path: cleanPath,
+      categories: ['general'],
+      language: 'Auto',
+      createdAt: new Date().toISOString(),
+      lastOpenedAt: new Date().toISOString()
+    };
+
+    await window.elix.saveProject(proj);
+    setActiveProject(proj);
+    localStorage.setItem('elix_active_project_path', proj.path);
+    setActiveActivity('explorer');
+    setIsSidebarOpen(true);
+
+    const projs = await window.elix.getProjects();
+    if (projs) setRecentProjects(projs);
+
+    if (specificFileToOpen) {
+      const fileName = specificFileToOpen.replace(/\\/g, '/').split('/').pop() || specificFileToOpen;
+      await handleOpenFile(specificFileToOpen, fileName);
+    } else {
+      try {
+        const items = await window.elix.readDir(cleanPath);
+        if (items && items.length > 0) {
+          const primary = findPrimaryFile(items);
+          if (primary) {
+            await handleOpenFile(primary.path, primary.name);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to auto-open primary file:', err);
+      }
+    }
+  }, [handleOpenFile]);
+
+  const handleOpenTargetPath = useCallback(async (targetPath: string) => {
+    if (!window.elix || !targetPath) return;
+    const info = window.elix.getPathInfo ? await window.elix.getPathInfo(targetPath) : null;
+    if (info && info.exists) {
+      if (info.isDirectory) {
+        await openFolderPath(targetPath);
+      } else if (info.isFile) {
+        await openFolderPath(info.dir, targetPath);
+      }
+    } else {
+      await openFolderPath(targetPath);
+    }
+  }, [openFolderPath]);
+
   // Initial Load: Projects & Templates & Streaks
   useEffect(() => {
     if (window.elix) {
       refreshStreaks();
 
+      // Check launch path passed via CLI, Windows context menu, or macOS open-file
+      let hasLaunchedTarget = false;
+      if (window.elix.getLaunchPath) {
+        window.elix.getLaunchPath().then(lp => {
+          if (lp) {
+            hasLaunchedTarget = true;
+            handleOpenTargetPath(lp);
+          }
+        });
+      }
+
       window.elix.getProjects().then(projs => {
         if (projs && projs.length > 0) {
           setRecentProjects(projs);
-          const savedPath = localStorage.getItem('elix_active_project_path');
-          if (savedPath) {
-            const found = projs.find(p => p.path === savedPath);
-            if (found) {
-              setActiveProject(found);
+          if (!hasLaunchedTarget) {
+            const savedPath = localStorage.getItem('elix_active_project_path');
+            if (savedPath) {
+              const found = projs.find(p => p.path === savedPath);
+              if (found) {
+                setActiveProject(found);
+              }
             }
           }
         }
@@ -287,15 +450,21 @@ export const App: React.FC = () => {
         }
       });
 
+      // Listen for runtime external file/folder opens (e.g. 2nd instance launched from context menu)
+      const unsubOpenPath = window.elix.onOpenExternalPath
+        ? window.elix.onOpenExternalPath(p => handleOpenTargetPath(p))
+        : () => {};
+
       const handleResetEvent = () => refreshStreaks();
       window.addEventListener('elix-progress-reset', handleResetEvent);
 
       return () => {
         unsub();
+        unsubOpenPath();
         window.removeEventListener('elix-progress-reset', handleResetEvent);
       };
     }
-  }, []);
+  }, [handleOpenTargetPath]);
 
   // Keyboard Shortcuts (Standard VS Code)
   useEffect(() => {
@@ -378,65 +547,6 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  // Open File into Tab
-  const handleOpenFile = useCallback(async (filePath: string, fileName: string) => {
-    const existing = tabs.find(t => t.path === filePath);
-    if (existing) {
-      setActiveTabId(existing.id);
-      return;
-    }
-
-    if (window.elix) {
-      const ext = fileName.toLowerCase().split('.').pop() || '';
-      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'bmp', 'svg', 'avif'].includes(ext);
-      const isPdf = ext === 'pdf';
-      const isDocx = ['docx', 'doc'].includes(ext);
-      const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
-      const isAudio = ['mp3', 'wav', 'aac'].includes(ext);
-      const isBinary = isImage || isPdf || isDocx || isVideo || isAudio;
-
-      if (isBinary) {
-        const [base64Url, stats] = await Promise.all([
-          window.elix.readFileBase64 ? window.elix.readFileBase64(filePath) : null,
-          window.elix.getFileStats ? window.elix.getFileStats(filePath) : null
-        ]);
-
-        const newTab: EditorTab = {
-          id: filePath,
-          name: fileName,
-          path: filePath,
-          content: '',
-          isDirty: false,
-          isBinary: true,
-          mediaType: isImage ? 'image' : isPdf ? 'pdf' : isDocx ? 'docx' : isVideo ? 'video' : 'audio',
-          base64Url: base64Url || `file:///${filePath.replace(/\\/g, '/')}`,
-          fileSize: stats?.size || 0
-        };
-
-        setTabs(prev => {
-          if (!prev.some(t => t.id === newTab.id)) {
-            return [...prev, newTab];
-          }
-          return prev;
-        });
-        setActiveTabId(newTab.id);
-        return;
-      }
-
-      const content = await window.elix.readFile(filePath);
-      if (typeof content === 'string') {
-        const newTab: EditorTab = {
-          id: filePath,
-          name: fileName,
-          path: filePath,
-          content,
-          isDirty: false
-        };
-        setTabs(prev => [...prev, newTab]);
-        setActiveTabId(newTab.id);
-      }
-    }
-  }, [tabs, activeProject]);
 
   // Open File Dialog
   const handleOpenFileDialog = useCallback(async () => {
@@ -536,34 +646,16 @@ export const App: React.FC = () => {
     if (window.elix) {
       const folderPath = await window.elix.openFolderDialog();
       if (folderPath) {
-        const folderName = folderPath.split(/[/\\]/).pop() || 'Workspace';
-        const proj: ProjectMetadata = {
-          id: `proj_${Date.now()}`,
-          name: folderName,
-          path: folderPath,
-          categories: ['general'],
-          language: 'Auto',
-          createdAt: new Date().toISOString(),
-          lastOpenedAt: new Date().toISOString()
-        };
-        await window.elix.saveProject(proj);
-        setActiveProject(proj);
-        localStorage.setItem('elix_active_project_path', proj.path);
-        setActiveActivity('explorer');
-        setIsSidebarOpen(true);
-        // Refresh recent projects
-        const projs = await window.elix.getProjects();
-        if (projs) setRecentProjects(projs);
+        await openFolderPath(folderPath);
       }
     }
   };
 
   // Open Project from Welcome/Recents
   const handleOpenProject = (project: ProjectMetadata) => {
-    setActiveProject(project);
-    localStorage.setItem('elix_active_project_path', project.path);
-    setActiveActivity('explorer');
-    setIsSidebarOpen(true);
+    if (project?.path) {
+      openFolderPath(project.path);
+    }
   };
 
   // Close Folder (VS Code Parity)
