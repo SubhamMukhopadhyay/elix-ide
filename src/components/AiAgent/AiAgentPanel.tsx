@@ -21,7 +21,14 @@ import {
   Paperclip,
   Trash2,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Globe,
+  BookOpen,
+  GitBranch,
+  Bug,
+  FileQuestion,
+  RefreshCw,
+  FileText
 } from 'lucide-react';
 import { AiMessage, AiPermissionLevel } from '../../types';
 
@@ -70,6 +77,152 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const historyMenuRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  // @ Mention and / Action Menu state
+  const [mentionMenuType, setMentionMenuType] = useState<'mention' | 'action' | null>(null);
+  const [menuQuery, setMenuQuery] = useState<string>('');
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+
+  const MENTION_OPTIONS = [
+    {
+      id: 'codebase',
+      label: '@Codebase',
+      description: 'Search & reference entire workspace codebase',
+      icon: Globe,
+      color: 'text-blue-400 bg-blue-500/10'
+    },
+    {
+      id: 'files',
+      label: activeFilePath ? `@${activeFilePath.split(/[/\\]/).pop()}` : '@CurrentFile',
+      description: activeFilePath ? `Current open file (${activeFilePath.split(/[/\\]/).pop()})` : 'Attach active file to context',
+      icon: FileCode,
+      color: 'text-amber-400 bg-amber-500/10',
+      action: () => {
+        if (activeFilePath && !attachedFiles.includes(activeFilePath)) {
+          setAttachedFiles(prev => [...prev, activeFilePath]);
+        }
+      }
+    },
+    {
+      id: 'terminal',
+      label: '@Terminal',
+      description: 'Include recent terminal logs & errors',
+      icon: Terminal,
+      color: 'text-emerald-400 bg-emerald-500/10'
+    },
+    {
+      id: 'git',
+      label: '@GitDiff',
+      description: 'Include unstaged & staged git changes',
+      icon: GitBranch,
+      color: 'text-purple-400 bg-purple-500/10'
+    },
+    {
+      id: 'docs',
+      label: '@Docs',
+      description: 'Search framework & language documentation',
+      icon: BookOpen,
+      color: 'text-cyan-400 bg-cyan-500/10'
+    }
+  ];
+
+  const ACTION_OPTIONS = [
+    {
+      id: 'explain',
+      label: '/explain',
+      description: 'Explain step-by-step how this code works',
+      icon: FileQuestion,
+      color: 'text-blue-400 bg-blue-500/10'
+    },
+    {
+      id: 'fix',
+      label: '/fix',
+      description: 'Analyze bugs, compiler errors, and propose fixes',
+      icon: Bug,
+      color: 'text-red-400 bg-red-500/10'
+    },
+    {
+      id: 'test',
+      label: '/test',
+      description: 'Generate comprehensive unit and integration tests',
+      icon: CheckCircle2,
+      color: 'text-emerald-400 bg-emerald-500/10'
+    },
+    {
+      id: 'refactor',
+      label: '/refactor',
+      description: 'Clean up architecture and optimize performance',
+      icon: RefreshCw,
+      color: 'text-amber-400 bg-amber-500/10'
+    },
+    {
+      id: 'doc',
+      label: '/doc',
+      description: 'Generate documentation and JSDoc/docstrings',
+      icon: FileText,
+      color: 'text-cyan-400 bg-cyan-500/10'
+    },
+    {
+      id: 'terminal',
+      label: '/terminal',
+      description: 'Diagnose terminal output or suggest CLI command',
+      icon: Terminal,
+      color: 'text-emerald-400 bg-emerald-500/10'
+    },
+    {
+      id: 'clear',
+      label: '/clear',
+      description: 'Clear conversation history and start fresh',
+      icon: Trash2,
+      color: 'text-zinc-400 bg-zinc-500/10',
+      action: () => handleNewChat()
+    }
+  ];
+
+  const getFilteredOptions = () => {
+    if (mentionMenuType === 'mention') {
+      return MENTION_OPTIONS.filter(o => 
+        o.label.toLowerCase().includes(menuQuery) || 
+        o.description.toLowerCase().includes(menuQuery)
+      );
+    }
+    if (mentionMenuType === 'action') {
+      return ACTION_OPTIONS.filter(o => 
+        o.label.toLowerCase().includes(menuQuery) || 
+        o.description.toLowerCase().includes(menuQuery)
+      );
+    }
+    return [];
+  };
+
+  const selectMenuItem = (item: any) => {
+    if (item.action) {
+      item.action();
+    }
+    
+    const cursorPos = textareaRef.current?.selectionStart || inputText.length;
+    const textBeforeCursor = inputText.slice(0, cursorPos);
+    const textAfterCursor = inputText.slice(cursorPos);
+
+    if (mentionMenuType === 'mention') {
+      const newBefore = textBeforeCursor.replace(/@[a-zA-Z0-9_-]*$/, `${item.label} `);
+      setInputText(newBefore + textAfterCursor);
+    } else if (mentionMenuType === 'action') {
+      if (item.id === 'clear') {
+        setInputText('');
+      } else {
+        const newBefore = textBeforeCursor.replace(/(?:^|\s)\/[a-zA-Z0-9_-]*$/, `${item.label} `);
+        setInputText(newBefore + textAfterCursor);
+      }
+    }
+
+    setMentionMenuType(null);
+    setMenuQuery('');
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
+  };
 
   // Close popovers on click outside
   useEffect(() => {
@@ -86,6 +239,9 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
       }
       if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
         setShowMoreMenu(false);
+      }
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setMentionMenuType(null);
       }
     };
     window.addEventListener('mousedown', handleOutsideClick);
@@ -106,6 +262,11 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputText).trim();
     if (!query || isProcessing) return;
+
+    if (query === '/clear') {
+      handleNewChat();
+      return;
+    }
 
     setInputText('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -145,7 +306,62 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
     setIsProcessing(false);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+
+    const cursorPos = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    
+    // Check for @ mention at cursor
+    const atMatch = textBeforeCursor.match(/@([a-zA-Z0-9_-]*)$/);
+    // Check for / action at start of line or after whitespace
+    const slashMatch = textBeforeCursor.match(/(?:^|\s)\/([a-zA-Z0-9_-]*)$/);
+
+    if (atMatch) {
+      setMentionMenuType('mention');
+      setMenuQuery(atMatch[1].toLowerCase());
+      setSelectedIndex(0);
+    } else if (slashMatch) {
+      setMentionMenuType('action');
+      setMenuQuery(slashMatch[1].toLowerCase());
+      setSelectedIndex(0);
+    } else {
+      setMentionMenuType(null);
+      setMenuQuery('');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionMenuType) {
+      const filtered = getFilteredOptions();
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % (filtered.length || 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + (filtered.length || 1)) % (filtered.length || 1));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (filtered[selectedIndex]) {
+          selectMenuItem(filtered[selectedIndex]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionMenuType(null);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -529,8 +745,86 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
       <div className="p-3 bg-[var(--ide-sidebar-bg)] shrink-0">
         
         {/* Antigravity Input Box Card */}
-        <div className="bg-[var(--ide-input-bg)] border border-[var(--ide-border)] focus-within:border-[var(--ide-accent)] rounded-2xl p-3 shadow-sm transition-all">
+        <div className="relative bg-[var(--ide-input-bg)] border border-[var(--ide-border)] focus-within:border-[var(--ide-accent)] rounded-2xl p-3 shadow-sm transition-all">
           
+          {/* Autocomplete Menu for @ Mentions and / Actions */}
+          {mentionMenuType && (
+            <div 
+              ref={menuContainerRef}
+              className="absolute bottom-full left-0 right-0 mb-2 bg-[var(--ide-panel-bg)] border border-[var(--ide-border)] rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-100"
+            >
+              <div className="px-3.5 py-2 bg-[var(--ide-sidebar-bg)] border-b border-[var(--ide-border)] flex items-center justify-between text-[11px] font-medium text-[var(--ide-text-muted)]">
+                <span className="flex items-center gap-1.5 font-semibold text-[var(--ide-text)]">
+                  {mentionMenuType === 'mention' ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-mono text-[11px] font-bold">@</span>
+                      <span>Mention Context</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono text-[11px] font-bold">/</span>
+                      <span>Quick Actions & Commands</span>
+                    </>
+                  )}
+                </span>
+                <span className="text-[10px] text-[var(--ide-text-muted)] flex items-center gap-1">
+                  <span className="px-1 py-0.5 bg-[var(--ide-hover-bg)] rounded border border-[var(--ide-border)] text-[9px] font-mono">↑↓</span>
+                  <span>navigate</span>
+                  <span className="px-1 py-0.5 bg-[var(--ide-hover-bg)] rounded border border-[var(--ide-border)] text-[9px] font-mono ml-1">↵</span>
+                  <span>select</span>
+                </span>
+              </div>
+
+              <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+                {getFilteredOptions().length > 0 ? (
+                  getFilteredOptions().map((opt, idx) => {
+                    const Icon = opt.icon;
+                    const isSelected = idx === selectedIndex;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectMenuItem(opt);
+                        }}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
+                          isSelected 
+                            ? 'bg-[var(--ide-hover-bg)] border border-[var(--ide-accent)]/50 shadow-sm' 
+                            : 'hover:bg-[var(--ide-hover-bg)] border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${opt.color || 'bg-[var(--ide-hover-bg)] text-[var(--ide-text)]'}`}>
+                            <Icon size={13} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-mono text-xs font-semibold text-[var(--ide-text)] flex items-center gap-1.5">
+                              <span>{opt.label}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--ide-text-muted)] truncate max-w-[280px]">
+                              {opt.description}
+                            </div>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <span className="text-[10px] text-[var(--ide-text-muted)] font-mono shrink-0 px-1.5 py-0.5 rounded bg-[var(--ide-panel-bg)] border border-[var(--ide-border)]">
+                            Tab ↵
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-3 text-center text-xs text-[var(--ide-text-muted)]">
+                    No matching {mentionMenuType === 'mention' ? 'mentions' : 'actions'} found for "{menuQuery}"
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Active File / Context pill if attached */}
           {attachedFiles.length > 0 && (
             <div className="flex items-center gap-1.5 mb-2 flex-wrap">
@@ -550,11 +844,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
           <textarea
             ref={textareaRef}
             value={inputText}
-            onChange={e => {
-              setInputText(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
-            }}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything, @ to mention, / for actions"
             className="w-full bg-transparent resize-none outline-none text-[var(--ide-text)] placeholder-[var(--ide-text-muted)] text-[13px] leading-relaxed min-h-[46px] max-h-[160px]"
@@ -569,9 +859,11 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                 onClick={() => {
                   if (activeFilePath && !attachedFiles.includes(activeFilePath)) {
                     setAttachedFiles(prev => [...prev, activeFilePath]);
+                  } else {
+                    setMentionMenuType(prev => prev === 'mention' ? null : 'mention');
                   }
                 }}
-                title="Add active file to context"
+                title="Add context or file (@)"
                 className="w-6 h-6 rounded-md hover:bg-[var(--ide-hover-bg)] text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] flex items-center justify-center transition-colors"
               >
                 <Plus size={14} />
