@@ -31,11 +31,15 @@ Choose the build tailored for your operating system. All official packages are p
       <p><b>Windows 10, 11 (64-bit)</b></p>
       <p>Native Setup Wizard with custom directory selector, Start Menu shortcuts & uninstaller.</p>
       <br/>
-      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.exe">
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Setup-x64.exe">
         <img src="https://img.shields.io/badge/Download_for-Windows_x64-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows .exe" />
       </a>
       <br/><br/>
-      <sub>Package: <code>Elix-IDE-Setup.exe</code> (96.7 MB)</sub>
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Portable-x64.zip">
+        <img src="https://img.shields.io/badge/Portable-Windows_.zip-005A9E?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows .zip" />
+      </a>
+      <br/><br/>
+      <sub>Package: <code>.exe</code> (123.5 MB) • <code>.zip</code> (131.5 MB)</sub>
       <br/><br/>
     </td>
     <td align="center" width="33%" valign="top">
@@ -45,15 +49,19 @@ Choose the build tailored for your operating system. All official packages are p
       <p><b>Ubuntu, Debian, Fedora, Arch</b></p>
       <p>Native deb/rpm packages with desktop launcher integration and portable universal tarball.</p>
       <br/>
-      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.deb">
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Ubuntu-Debian-amd64.deb">
         <img src="https://img.shields.io/badge/Ubuntu%20%2F%20Debian-.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download .deb" />
       </a>
       <br/><br/>
-      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.tar.gz">
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Fedora-RHEL-x86_64.rpm">
+        <img src="https://img.shields.io/badge/Fedora%20%2F%20RHEL-.rpm-51A2DA?style=for-the-badge&logo=fedora&logoColor=white" alt="Download .rpm" />
+      </a>
+      <br/><br/>
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Universal-Portable-x64.tar.gz">
         <img src="https://img.shields.io/badge/Universal_Linux-.tar.gz-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download .tar.gz" />
       </a>
       <br/><br/>
-      <sub>Package: <code>.deb</code> (126.8 MB) • <code>.tar.gz</code> (126.7 MB)</sub>
+      <sub>Package: <code>.deb</code> (83.0 MB) • <code>.rpm</code> (83.0 MB) • <code>.tar.gz</code> (120.6 MB)</sub>
       <br/><br/>
     </td>
     <td align="center" width="33%" valign="top">
@@ -63,15 +71,15 @@ Choose the build tailored for your operating system. All official packages are p
       <p><b>macOS 12 Monterey or later</b></p>
       <p>Universal build with native performance on Apple Silicon (M1/M2/M3/M4) and Intel Macs.</p>
       <br/>
-      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.dmg">
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-macOS-Universal.dmg">
         <img src="https://img.shields.io/badge/Download_for-macOS_Universal-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS .dmg" />
       </a>
       <br/><br/>
-      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.zip">
+      <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-macOS-Universal-Portable.zip">
         <img src="https://img.shields.io/badge/Portable-macOS_.zip-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS .zip" />
       </a>
       <br/><br/>
-      <sub>Package: <code>.dmg</code> / <code>.zip</code> • Universal ARM64+x64</sub>
+      <sub>Package: <code>.dmg</code> (117.8 MB) • <code>.zip</code> (113.5 MB)</sub>
       <br/><br/>
     </td>
   </tr>
@@ -81,10 +89,13 @@ Choose the build tailored for your operating system. All official packages are p
 
 | Operating System | Recommended Download | Quick Install / Launch Command |
 | :--- | :--- | :--- |
-| **🪟 Windows 10 / 11** | [`Elix-IDE-Setup.exe`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.exe) | Double-click wizard or run: `.\Elix-IDE-Setup.exe` |
-| **🐧 Ubuntu / Debian / Mint** | [`Elix-IDE-Setup.deb`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.deb) | `sudo dpkg -i Elix-IDE-Setup.deb` |
-| **🐧 Universal Linux** | [`Elix-IDE-Setup.tar.gz`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.tar.gz) | `tar -xzf Elix-IDE-Setup.tar.gz && ./elix-ide` |
-| **🍎 macOS (Universal)** | [`Elix-IDE-Setup.dmg`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Setup.dmg) | Drag `Elix IDE.app` into your `/Applications` folder |
+| **🪟 Windows (Installer)** | [`Elix-IDE-Windows-Setup-x64.exe`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Setup-x64.exe) | Double-click wizard or run: `.\Elix-IDE-Windows-Setup-x64.exe` |
+| **🪟 Windows (Portable)** | [`Elix-IDE-Windows-Portable-x64.zip`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Portable-x64.zip) | Extract zip and double-click `Elix IDE.exe` directly |
+| **🐧 Ubuntu / Debian / Mint** | [`Elix-IDE-Linux-Ubuntu-Debian-amd64.deb`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Ubuntu-Debian-amd64.deb) | `sudo dpkg -i Elix-IDE-Linux-Ubuntu-Debian-amd64.deb` |
+| **🐧 Fedora / RHEL / openSUSE** | [`Elix-IDE-Linux-Fedora-RHEL-x86_64.rpm`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Fedora-RHEL-x86_64.rpm) | `sudo rpm -ivh Elix-IDE-Linux-Fedora-RHEL-x86_64.rpm` |
+| **🐧 Universal Linux** | [`Elix-IDE-Linux-Universal-Portable-x64.tar.gz`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux-Universal-Portable-x64.tar.gz) | `tar -xzf Elix-IDE-Linux-Universal-Portable-x64.tar.gz && ./elix-ide` |
+| **🍎 macOS (Universal)** | [`Elix-IDE-macOS-Universal.dmg`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-macOS-Universal.dmg) | Drag `Elix IDE.app` into your `/Applications` folder |
+| **🍎 macOS (Portable)** | [`Elix-IDE-macOS-Universal-Portable.zip`](https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-macOS-Universal-Portable.zip) | Extract zip and run `Elix IDE.app` |
 
 All releases, package checksums, and changelogs are published on the [Official GitHub Releases](https://github.com/SubhamMukhopadhyay/elix-ide/releases) page.
 
