@@ -78,9 +78,11 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --dir",
     "build:installer": "tsc && vite build && electron-builder --win",
+    "build:win": "node scripts/build-win.js",
     "build:linux": "tsc && vite build && electron-builder --linux",
     "build:deb": "node scripts/pack-deb.js",
-    "build:mac": "tsc && vite build && electron-builder --mac",
+    "build:mac": "tsc && vite build && electron-builder --mac -c.mac.identity=null",
+    "publish:release": "node scripts/publish-github-release.mjs",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
     "preview": "vite preview"

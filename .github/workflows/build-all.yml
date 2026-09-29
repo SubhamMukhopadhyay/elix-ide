@@ -28,27 +28,11 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Setup winCodeSign Cache (Bypass Symlinks)
-        shell: pwsh
-        run: |
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d 1
-          $cacheDir = "$env:LOCALAPPDATA\electron-builder\cache\winCodeSign"
-          New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
-          $destDir = "$cacheDir\winCodeSign-2.6.0"
-          if (!(Test-Path "$destDir\rcedit-x64.exe")) {
-            Write-Host "Pre-extracting winCodeSign without darwin symlinks..."
-            $zipPath = "$cacheDir\winCodeSign-2.6.0.7z"
-            Invoke-WebRequest -Uri "https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z" -OutFile $zipPath
-            7z x $zipPath -o"$destDir" -xr!*darwin* -y
-          }
-
       - name: Install dependencies
         run: npm ci
 
       - name: Build Windows Installer
-        run: npm run build:installer
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: node scripts/build-win.js
 
       - name: Upload Windows Setup Artifact
         uses: actions/upload-artifact@v4
@@ -113,7 +97,7 @@ jobs:
         run: npm ci
 
       - name: Build macOS Installer
-        run: npx electron-builder --mac -c.mac.identity=null
+        run: npm run build:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
