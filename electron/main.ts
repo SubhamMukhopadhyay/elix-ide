@@ -21,13 +21,13 @@ let mainWindow: BrowserWindow | null = null;
 let initialLaunchPath: string | null = null;
 
 function parsePathArg(args: string[]): string | null {
-  if (!args || args.length === 0) return null;
-  const sliceIndex = app.isPackaged ? 1 : 2;
-  const candidateArgs = args.slice(sliceIndex);
-  for (const arg of candidateArgs) {
-    if (!arg || arg.startsWith('--') || arg.startsWith('-')) continue;
+  if (!args || args.length <= 1) return null;
+  for (let i = 1; i < args.length; i++) {
+    const raw = (args[i] || '').trim();
+    if (!raw || raw === '.' || raw.startsWith('--') || raw.startsWith('-')) continue;
+    if (raw.endsWith('electron/main.ts') || raw.endsWith('electron\\main.ts') || raw.endsWith('dist-electron/main.js') || raw.endsWith('dist-electron\\main.js')) continue;
     try {
-      const resolved = path.resolve(arg);
+      const resolved = path.resolve(raw);
       if (fs.existsSync(resolved)) {
         return resolved;
       }

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Threading;
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace ElixInstaller
@@ -331,6 +332,12 @@ namespace ElixInstaller
 
                 RegisterUninstall(installDir, exePath);
 
+                try
+                {
+                    SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
+                }
+                catch { }
+
                 // Finished
                 this.Invoke(new Action(() => {
                     currentStep = Step.Complete;
@@ -355,6 +362,9 @@ namespace ElixInstaller
             }
         }
 
+        [DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
         private void CreateShortcut(string shortcutPath, string targetPath, string description)
         {
             try
@@ -368,6 +378,7 @@ namespace ElixInstaller
                 scType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { targetPath });
                 scType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { Path.GetDirectoryName(targetPath) });
                 scType.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut, new object[] { description });
+                scType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { targetPath + ",0" });
                 scType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);
             }
             catch { }
@@ -377,11 +388,24 @@ namespace ElixInstaller
         {
             try
             {
+                string iconSpec = "\"" + exePath + "\",0";
+
+                // Windows 'Open with' application registration
+                using (RegistryKey appKey = Registry.CurrentUser.CreateSubKey(@"Software\Classes\Applications\Elix IDE.exe"))
+                {
+                    appKey.SetValue("FriendlyAppName", "Elix IDE");
+                    appKey.SetValue("Icon", iconSpec);
+                    using (RegistryKey cmdKey = appKey.CreateSubKey(@"shell\open\command"))
+                    {
+                        cmdKey.SetValue("", "\"" + exePath + "\" \"%1\"");
+                    }
+                }
+
                 // File context menu
                 using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\*\shell\OpenWithElix"))
                 {
                     key.SetValue("", "Open with Elix IDE");
-                    key.SetValue("Icon", exePath);
+                    key.SetValue("Icon", iconSpec);
                     using (RegistryKey cmdKey = key.CreateSubKey("command"))
                     {
                         cmdKey.SetValue("", "\"" + exePath + "\" \"%1\"");
@@ -392,7 +416,7 @@ namespace ElixInstaller
                 using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\Directory\shell\OpenWithElix"))
                 {
                     key.SetValue("", "Open with Elix IDE");
-                    key.SetValue("Icon", exePath);
+                    key.SetValue("Icon", iconSpec);
                     using (RegistryKey cmdKey = key.CreateSubKey("command"))
                     {
                         cmdKey.SetValue("", "\"" + exePath + "\" \"%V\"");
@@ -403,7 +427,7 @@ namespace ElixInstaller
                 using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\Directory\Background\shell\OpenWithElix"))
                 {
                     key.SetValue("", "Open with Elix IDE");
-                    key.SetValue("Icon", exePath);
+                    key.SetValue("Icon", iconSpec);
                     using (RegistryKey cmdKey = key.CreateSubKey("command"))
                     {
                         cmdKey.SetValue("", "\"" + exePath + "\" \"%V\"");

@@ -409,34 +409,37 @@ export const App: React.FC = () => {
 
   // Initial Load: Projects & Templates & Streaks
   useEffect(() => {
-    if (window.elix) {
-      refreshStreaks();
+    if (!window.elix) return;
+    refreshStreaks();
 
-      // Check launch path passed via CLI, Windows context menu, or macOS open-file
-      let hasLaunchedTarget = false;
-      if (window.elix.getLaunchPath) {
-        window.elix.getLaunchPath().then(lp => {
-          if (lp) {
-            hasLaunchedTarget = true;
-            handleOpenTargetPath(lp);
-          }
-        });
+    (async () => {
+      let launchPath: string | null = null;
+      try {
+        if (window.elix.getLaunchPath) {
+          launchPath = await window.elix.getLaunchPath();
+        }
+      } catch (e) {
+        console.error('Failed to get launch path:', e);
       }
 
-      window.elix.getProjects().then(projs => {
+      try {
+        const projs = await window.elix.getProjects();
         if (projs && projs.length > 0) {
           setRecentProjects(projs);
-          if (!hasLaunchedTarget) {
-            const savedPath = localStorage.getItem('elix_active_project_path');
-            if (savedPath) {
-              const found = projs.find(p => p.path === savedPath);
-              if (found) {
-                setActiveProject(found);
-              }
-            }
-          }
         }
-      });
+      } catch (e) {
+        console.error('Failed to get projects:', e);
+      }
+
+      if (launchPath) {
+        await handleOpenTargetPath(launchPath);
+      } else {
+        const savedPath = localStorage.getItem('elix_active_project_path');
+        if (savedPath) {
+          await openFolderPath(savedPath);
+        }
+      }
+    })();
 
       window.elix.getAllTemplates().then(tmpls => {
         if (tmpls) setTemplates(tmpls);
@@ -463,7 +466,6 @@ export const App: React.FC = () => {
         unsubOpenPath();
         window.removeEventListener('elix-progress-reset', handleResetEvent);
       };
-    }
   }, [handleOpenTargetPath]);
 
   // Keyboard Shortcuts (Standard VS Code)
