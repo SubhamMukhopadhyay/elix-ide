@@ -85,7 +85,8 @@
     "publish:release": "node scripts/publish-github-release.mjs",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "website": "node website/server.js"
   },
   "keywords": [
     "ide",

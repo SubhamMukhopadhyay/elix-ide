@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elix IDE — The Desktop Code Editor for Focus, AI & Career Practice</title>
+  <meta name="description" content="A fast, distraction-free desktop code editor with contextual AI pair programming, zero-config execution, and 1,000+ career interview challenges.">
+  
+  <!-- Universal High-Res Favicon (Embedded Data URI so it works 100% without external HTTP requests) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='245 190 300 300'%3E%3Cpath d='M280 220 L510 220' stroke='%23ffffff' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M370 295 L305 340 L370 385' stroke='%23ffffff' stroke-width='28' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M305 340 L460 340' stroke='%23ffffff' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M280 460 L510 460' stroke='%23ffffff' stroke-width='28' stroke-linecap='round'/%3E%3Cpath d='M280 220 L280 460' stroke='%23ffffff' stroke-width='28' stroke-linecap='round'/%3E%3Ccircle cx='505' cy='340' r='16' fill='%2300e5ff'/%3E%3C/svg%3E">
+  <link rel="alternate icon" href="/favicon.ico">
+
+  <style>
+    /* ================= SYSTEM BASE & VS CODE STYLESHEET FOUNDATION ================= */
+    :root {
+      --background: #0d1017;
+      --card-bg: #161b22;
+      --card-hover: #1c2129;
+      --card-border: rgba(255, 255, 255, 0.12);
+      --card-border-hover: rgba(255, 255, 255, 0.24);
+      --foreground: #e6edf3;
+      --foreground-muted: #8b949e;
+      --foreground-subtle: #6e7681;
+      
+      --accent-primary: #0078d4;
+      --accent-hover: #0066b8;
+      --accent-active: #005a9e;
+      
+      --btn-secondary-bg: #21262d;
+      --btn-secondary-hover: #30363d;
+      --btn-secondary-border: rgba(255, 255, 255, 0.15);
+      
+      --link-color: #58a6ff;
+      --link-hover: #79c0ff;
+      
+      --code-bg: #090d13;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      color: var(--link-color);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    a:hover {
+      color: var(--link-hover);
+      text-decoration: underline;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1140px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    /* ================= HEADER ================= */
+    header {
+      background-color: rgba(13, 16, 23, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #ffffff;
+      text-decoration: none !important;
+    }
+    .brand svg {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    nav.nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-left: 32px;
+    }
+    nav.nav-links a {
+      color: var(--foreground-muted);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    nav.nav-links a:hover {
+      color: #ffffff;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ================= BUTTONS ================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none !important;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-primary);
+      color: #ffffff;
+      border-color: var(--accent-primary);
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+    .btn-primary:active {
+      background-color: var(--accent-active);
+    }
+
+    .btn-secondary {
+      background-color: var(--btn-secondary-bg);
+      color: var(--foreground);
+      border-color: var(--btn-secondary-border);
+    }
+    .btn-secondary:hover {
+      background-color: var(--btn-secondary-hover);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+    }
+
+    .btn-small {
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 4px;
+    }
+
+    /* ================= HERO SECTION ================= */
+    .hero {
+      padding: 64px 0 52px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .hero h1 {
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #ffffff;
+      max-width: 820px;
+      margin: 0 auto 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--foreground-muted);
+      max-width: 680px;
+      margin: 0 auto 32px;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .hero-platform-text {
+      font-size: 13px;
+      color: var(--foreground-subtle);
+    }
+
+    /* ================= 3 CORE PILLARS ================= */
+    .section-pad {
+      padding: 56px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 40px;
+    }
+    .section-header h2 {
+      font-size: 26px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .section-header p {
+      font-size: 15px;
+      color: var(--foreground-muted);
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .pillar-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 28px 24px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .pillar-card:hover {
+      border-color: var(--card-border-hover);
+      background-color: var(--card-hover);
+    }
+
+    .pillar-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      background-color: rgba(0, 120, 212, 0.12);
+      border: 1px solid rgba(0, 120, 212, 0.25);
+      color: #58a6ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .pillar-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .pillar-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--foreground-muted);
+    }
+
+    /* ================= DOWNLOAD MATRIX (VS CODE STYLE) ================= */
+    .downloads-section {
+      background-color: #0b0e14;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .platform-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 32px 24px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .platform-card:hover {
+      border-color: var(--card-border-hover);
+      background-color: var(--card-hover);
+    }
+
+    .platform-icon-wrap {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+    .platform-icon-wrap svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .platform-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .platform-meta {
+      font-size: 13px;
+      color: var(--foreground-muted);
+    }
+
+    .platform-actions {
+      width: 100%;
+      margin: 20px 0 16px;
+    }
+    .platform-actions .btn {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .dual-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .platform-sub-links {
+      width: 100%;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+      text-align: left;
+    }
+    .sub-link-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+    }
+    .sub-link-row span {
+      color: var(--foreground-muted);
+    }
+    .sub-link-row a {
+      font-weight: 500;
+    }
+
+    .downloads-footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--foreground-subtle);
+    }
+
+    /* ================= FOOTER ================= */
+    footer {
+      background-color: #080a0e;
+      padding: 36px 0;
+      margin-top: auto;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--foreground-muted);
+      font-size: 13px;
+    }
+    .footer-brand svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .footer-links a {
+      color: var(--foreground-muted);
+    }
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    /* ================= RESPONSIVENESS ================= */
+    @media (max-width: 900px) {
+      .platform-grid, .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 30px;
+      }
+      nav.nav-links {
+        display: none;
+      }
+      .footer-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header>
+    <div class="container header-inner">
+      <div style="display: flex; align-items: center;">
+        <a href="#" class="brand">
+          <!-- Official Geometric Elix IDE Monogram SVG -->
+          <svg viewBox="245 190 300 300" fill="none" aria-hidden="true">
+            <path d="M 280 220 L 510 220" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+            <path d="M 370 295 L 305 340 L 370 385" stroke="#E2E8F0" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 305 340 L 460 340" stroke="#E2E8F0" stroke-width="28" stroke-linecap="round" />
+            <path d="M 280 460 L 510 460" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+            <path d="M 280 220 L 280 460" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+            <circle cx="505" cy="340" r="16" fill="#00E5FF" />
+          </svg>
+          <span>Elix IDE</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#about">Overview</a>
+          <a href="#downloads">Downloads</a>
+          <a href="https://github.com/SubhamMukhopadhyay/elix-ide" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/tag/v1.0.0" target="_blank" rel="noopener">Release Notes</a>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <span style="font-family: var(--font-mono); font-size: 12px; color: var(--foreground-muted);">v1.0.0</span>
+        <a href="#downloads" class="btn btn-primary btn-small">Download</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO SECTION ================= -->
+  <main>
+    <section class="hero">
+      <div class="container">
+        
+        <h1>The desktop IDE for focused code, AI intelligence, and career practice.</h1>
+        
+        <p class="hero-subtitle">
+          Elix IDE combines instantaneous startup, universal zero-config multilingual execution, deeply integrated AI pair programming, and an offline interactive interview training hub.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="#downloads" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download for Free (v1.0.0)</span>
+          </a>
+          <a href="#about" class="btn btn-secondary">
+            <span>Explore Overview &darr;</span>
+          </a>
+        </div>
+
+        <p class="hero-platform-text">
+          Free standalone desktop software for Windows, macOS, and Linux. No mandatory account required.
+        </p>
+
+      </div>
+    </section>
+
+    <!-- ================= SECTION 1: OVERVIEW / WHY ELIX IDE ================= -->
+    <section class="section-pad" id="about">
+      <div class="container">
+        
+        <div class="section-header">
+          <h2>Engineered for developer velocity</h2>
+          <p>Traditional editors require dozens of brittle plugins and separate browser tabs. Elix IDE delivers core engineering workflows natively.</p>
+        </div>
+
+        <div class="pillars-grid">
+          
+          <div class="pillar-card">
+            <div class="pillar-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+            </div>
+            <h3>Integrated Career Hub</h3>
+            <p>1,000+ curated algorithm challenges built directly into your desktop editor. Write code and evaluate local test cases with millisecond execution feedback — zero tab-switching to LeetCode.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12A10 10 0 0 1 12 2z"></path><path d="m10 15 5-3-5-3v6z"></path></svg>
+            </div>
+            <h3>Bring Your Own Keys AI</h3>
+            <p>Connect your own API keys for OpenAI, Google Gemini, Anthropic Claude, Groq, or run local models offline with Ollama. No $20/month subscription paywalls and zero telemetry.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </div>
+            <h3>Zero-Config Execution</h3>
+            <p>Forget wrestling with launch.json files or broken debuggers. Auto-detects installed compilers for Python, C++, Java, JS/TS, Rust, and Go with 1-click execution and built-in terminal.</p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= SECTION 2: DOWNLOAD CENTER ================= -->
+    <section class="section-pad downloads-section" id="downloads">
+      <div class="container">
+        
+        <div class="section-header">
+          <h2>Download Elix IDE</h2>
+          <p>Version 1.0.0 Stable. Select your platform below to download.</p>
+        </div>
+
+        <!-- 3 Symmetrical Cards (Centered, like VS Code Download) -->
+        <div class="platform-grid">
+          
+          <!-- WINDOWS CARD -->
+          <div class="platform-card">
+            <div>
+              <div class="platform-icon-wrap">
+                <svg viewBox="0 0 88 88" fill="#0078d4"><path d="M0 12.402l35.687-4.86.016 34.423-35.67.203zm35.67 33.529l.028 34.453L.028 75.48.016 45.728zm4.326-39.027L87.914 0v41.527l-47.918.375zm47.918 43.159V88L39.996 76.577V46.137z"/></svg>
+              </div>
+              
+              <div class="platform-title">Windows</div>
+              <div class="platform-meta">Windows 10, 11 (64-bit)</div>
+            </div>
+
+            <div class="platform-actions">
+              <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Setup.exe" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download for Windows (.exe)</span>
+              </a>
+            </div>
+
+            <div class="platform-sub-links">
+              <div class="sub-link-row">
+                <span>Standalone Portable</span>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Windows-Portable.zip">.zip (131 MB)</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- MACOS CARD -->
+          <div class="platform-card">
+            <div>
+              <div class="platform-icon-wrap">
+                <svg viewBox="0 0 170 170" fill="#ffffff"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.04-7.58-7.7-11.64-13.98-5.74-8.86-10.42-19.16-14.04-30.89-3.62-11.73-5.43-23.01-5.43-33.84 0-14.82 3.73-27.18 11.19-37.07 7.46-9.9 16.74-14.96 27.84-15.19 4.7 0 9.94 1.25 15.72 3.76 5.78 2.51 9.61 3.82 11.5 3.93 1.57-.11 5.56-1.48 11.96-4.11 6.4-2.63 11.96-3.83 16.68-3.6 12.38.78 22.38 5.68 30 14.7-10.86 6.57-16.18 15.71-15.96 27.42.23 9.4 3.79 17.26 10.68 23.59 6.89 6.32 15.19 9.8 24.9 10.44-2.24 6.7-4.82 13.3-7.74 19.82zm-35.9-106.13c0-6.72 2.37-12.98 7.12-18.79 4.75-5.81 10.66-9.37 17.72-10.68.89 6.6-1.32 12.92-6.63 18.96-5.3 6.04-11.4 9.5-18.21 10.51z"/></svg>
+              </div>
+              
+              <div class="platform-title">macOS</div>
+              <div class="platform-meta">Apple Silicon & Intel (macOS 12+)</div>
+            </div>
+
+            <div class="platform-actions">
+              <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Mac.dmg" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download for macOS (.dmg)</span>
+              </a>
+            </div>
+
+            <div class="platform-sub-links">
+              <div class="sub-link-row">
+                <span>Standalone Archive</span>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Mac.zip">.zip (113 MB)</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- LINUX CARD (100% Crisp Vector Tux SVG - No Broken Image) -->
+          <div class="platform-card">
+            <div>
+              <div class="platform-icon-wrap">
+                <svg viewBox="0 0 58 58" fill="currentColor">
+                  <path d="M47.6083 42.5333C47.3667 42.05 47.125 41.5667 47.125 41.0833C47.125 40.1167 46.6417 39.3917 45.9167 38.6667C45.675 38.425 45.1917 38.1833 44.95 38.1833C46.4 33.8333 44.225 29.4833 41.8083 26.3417C39.875 23.4417 36.975 21.2667 37.2167 17.4C37.2167 12.8083 37.7 4.35002 29.2417 5.07502C20.5417 5.55835 22.9583 14.5 22.7167 17.6417C22.7167 20.3 21.5083 22.9583 19.575 25.1333C19.0917 25.6167 18.6083 26.3417 18.3667 26.825C15.95 29.725 14.7417 33.5917 14.7417 37.2167C14.2583 37.7 13.775 38.1833 13.5333 38.6667C13.2917 38.9083 13.05 39.15 13.05 39.3917C12.8083 39.6333 12.325 39.875 11.8417 40.1167C10.875 40.3583 10.15 40.8417 9.66667 41.8083C9.425 42.5333 9.18333 43.5 9.425 44.4667C9.66667 44.95 9.66667 45.4333 9.425 46.1583C8.94167 47.125 8.94167 48.3333 9.425 49.5417C10.15 50.5083 11.3583 50.75 13.05 50.9917C14.2583 50.9917 15.7083 51.475 16.9167 51.9583C18.125 52.6833 19.575 53.1667 21.025 53.1667C21.75 53.1667 22.7167 52.925 23.4417 52.6833C24.1667 52.2 24.65 51.7167 24.8917 50.9917C25.8583 50.9917 27.3083 50.5083 29 50.5083C30.45 50.5083 31.9 50.9917 33.8333 50.75C33.8333 50.9917 33.8333 51.2333 34.075 51.475C34.5583 52.6833 35.7667 53.65 37.2167 53.8917H37.7C39.6333 53.65 41.5667 52.6833 42.775 51.2333C43.7417 50.2667 44.95 49.5417 46.1583 49.0583C47.6083 48.3333 48.575 47.85 48.8167 46.6417C49.0583 44.95 48.575 43.9833 47.6083 42.5333ZM30.9333 11.6C32.3833 11.8417 33.5917 13.05 33.35 14.5C33.35 15.225 33.1083 15.95 32.625 16.675H32.3833C31.9 16.4333 31.6583 16.4333 31.4167 16.1917C31.6583 15.95 31.6583 15.4667 31.9 14.9833C31.9 14.0167 31.4167 13.2917 30.9333 13.2917C30.2083 13.2917 29.725 14.0167 29.725 14.9833V15.225C29.4833 14.9833 29 14.9833 28.7583 14.7417V14.5C28.5167 13.2917 29.4833 11.8417 30.9333 11.6ZM30.2083 16.4333C30.45 16.675 30.9333 16.9167 31.175 16.9167C31.4167 16.9167 31.9 17.1583 32.1417 17.4C32.625 17.6417 33.1083 17.8833 33.1083 18.6083C33.1083 19.3333 32.3833 20.0583 30.9333 20.5417C30.45 20.7833 30.2083 20.7833 29.9667 21.025C29.2417 21.5083 28.5167 21.75 27.55 21.75C26.825 21.75 26.1 21.2667 25.6167 20.7833C25.375 20.5417 25.1333 20.3 24.65 20.0583C24.4083 19.8167 23.925 19.3333 23.6833 18.6083C23.6833 18.3667 23.925 18.125 24.1667 17.8833C24.8917 17.4 25.1333 17.1583 25.375 16.9167L25.6167 16.675C26.1 15.95 27.0667 15.4667 28.0333 15.4667C28.7583 15.7083 29.4833 15.95 30.2083 16.4333ZM25.1333 12.0833C26.1 12.0833 26.825 13.05 27.0667 14.7417V15.225C26.825 15.225 26.3417 15.4667 26.1 15.7083V15.225C26.1 14.5 25.6167 13.775 25.1333 14.0167C24.65 14.0167 24.4083 14.7417 24.4083 15.4667C24.4083 15.95 24.65 16.1917 24.8917 16.4333C24.8917 16.4333 24.65 16.675 24.4083 16.675C23.925 16.1917 23.4417 15.4667 23.4417 14.7417C23.4417 13.2917 24.1667 12.0833 25.1333 12.0833ZM22.7167 50.9917C21.025 51.7167 18.85 51.475 17.4 50.5083C15.95 49.7833 14.7417 49.5417 13.05 49.5417C11.8417 49.3 10.6333 49.3 10.3917 48.8167C10.15 48.3333 10.15 47.6083 10.6333 46.4C10.875 45.675 10.875 44.95 10.6333 44.225C10.3917 43.5 10.3917 43.0167 10.6333 42.2917C10.875 41.5667 11.3583 41.325 12.0833 41.0833C12.8083 40.8417 13.2917 40.6 13.775 40.1167C14.0167 39.875 14.2583 39.6334 14.5 39.15C15.225 38.1833 15.7083 37.7 16.4333 37.7C17.8833 37.9417 19.0917 40.1167 20.0583 42.2917C20.5417 43.0167 21.025 43.9833 21.75 44.7083C22.7167 45.9167 23.925 47.6083 23.925 48.575C23.925 49.7833 23.4417 50.5083 22.7167 50.9917ZM34.5583 45.675C34.5583 45.9167 34.5583 45.9167 34.3167 46.1583C31.4167 48.3333 27.55 48.575 24.4083 46.8833L22.9583 44.7083C25.1333 44.4667 24.65 41.5667 20.0583 38.6667C15.225 35.525 18.6083 29.725 20.3 27.0667C20.5417 26.825 20.5417 27.0667 19.575 29C18.85 30.45 17.4 34.075 19.3333 36.7333C19.3333 34.8 19.8167 32.8667 20.5417 30.9333C22.2333 27.7917 23.4417 24.1667 24.1667 20.5417C24.4083 20.7833 24.4083 20.7833 24.65 20.7833C24.8917 21.025 25.1333 21.2667 25.375 21.2667C25.8583 21.9917 26.825 22.2333 27.55 22.2333H27.7917C28.7583 22.2333 29.725 21.9917 30.45 21.2667C30.6917 21.025 30.9333 20.7833 31.4167 20.7833C32.1417 20.5417 32.8667 20.0583 33.5917 19.3333C34.5583 22.475 35.525 25.375 36.975 28.0333C37.9417 29.9667 38.6667 31.9 39.15 34.075C39.875 34.075 40.8417 34.3167 41.5667 34.8C43.5 35.7667 44.225 36.4917 43.9833 37.7H43.5C43.5 36.975 43.0167 36.25 41.325 35.525C39.6333 34.8 38.1833 34.8 37.7 36.4917C37.4583 36.4917 37.2167 36.7333 36.975 36.7333C35.0417 37.7 35.0417 40.3583 34.8 43.0167C35.0417 43.9833 34.8 44.7083 34.5583 45.675ZM45.675 47.125C44.225 47.6083 43.0167 48.575 42.05 49.7833C41.0833 51.2333 39.3917 52.2 37.4583 51.9583C36.4917 51.9583 35.525 51.2333 35.2833 50.2667C35.0417 48.8167 35.0417 47.3667 35.7667 45.9167C36.0083 44.95 36.25 44.225 36.4917 43.2583C36.7333 40.3583 36.7333 38.6667 37.9417 37.9417C37.9417 39.15 38.6667 39.875 39.6333 40.3583C40.8417 40.3583 42.05 40.1167 43.0167 39.15H43.5C44.225 39.15 44.7083 39.15 45.1917 39.6333C45.675 40.1167 45.9167 40.8417 45.9167 41.325C45.9167 42.05 46.4 42.775 46.6417 43.5C47.85 44.7083 47.85 45.4333 47.85 45.675C47.6083 46.1583 46.6417 46.6417 45.675 47.125ZM23.925 18.125C23.6833 18.125 23.6833 18.125 23.6833 18.3667C23.6833 18.3667 23.6833 18.6083 23.925 18.6083C24.1667 18.6083 24.1667 18.85 24.1667 18.85C24.8917 19.8167 26.1 20.3 27.55 20.5417C28.7583 20.3 29.9667 20.0583 31.175 19.0917L32.625 18.3667C32.8667 18.3667 32.8667 18.125 32.8667 18.125C32.8667 17.8833 32.8667 17.8833 32.625 17.8833C32.1417 18.125 31.4167 18.3667 30.9333 18.6083C29.9667 19.3333 28.7583 19.8167 27.55 19.8167C26.3417 19.8167 25.375 19.0917 24.65 18.3667C24.4083 18.3667 24.1667 18.125 23.925 18.125Z"/>
+                </svg>
+              </div>
+              
+              <div class="platform-title">Linux</div>
+              <div class="platform-meta">Debian, Ubuntu, Fedora, RHEL</div>
+            </div>
+
+            <div class="platform-actions">
+              <div class="dual-buttons">
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux.deb" class="btn btn-primary">
+                  <span>.deb</span>
+                </a>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux.rpm" class="btn btn-primary">
+                  <span>.rpm</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="platform-sub-links">
+              <div class="sub-link-row">
+                <span>Debian, Ubuntu (.deb)</span>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux.deb">83 MB</a>
+              </div>
+              <div class="sub-link-row">
+                <span>Red Hat, Fedora (.rpm)</span>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux.rpm">83 MB</a>
+              </div>
+              <div class="sub-link-row">
+                <span>Standalone Tarball</span>
+                <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases/download/v1.0.0/Elix-IDE-Linux.tar.gz">.tar.gz (120 MB)</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <p class="downloads-footer-note">
+          By downloading and using Elix IDE, you agree to its license terms. Free standalone desktop software.
+        </p>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= MINIMAL CLEAN FOOTER ================= -->
+  <footer>
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <!-- Official Geometric Elix IDE Monogram SVG -->
+        <svg viewBox="245 190 300 300" fill="none" aria-hidden="true">
+          <path d="M 280 220 L 510 220" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+          <path d="M 370 295 L 305 340 L 370 385" stroke="#E2E8F0" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M 305 340 L 460 340" stroke="#E2E8F0" stroke-width="28" stroke-linecap="round" />
+          <path d="M 280 460 L 510 460" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+          <path d="M 280 220 L 280 460" stroke="#F1F5F9" stroke-width="28" stroke-linecap="round" />
+          <circle cx="505" cy="340" r="16" fill="#00E5FF" />
+        </svg>
+        <span>Elix IDE</span>
+        <span>•</span>
+        <span>© 2026 Free and open source under MIT License</span>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://github.com/SubhamMukhopadhyay/elix-ide" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/SubhamMukhopadhyay/elix-ide/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/SubhamMukhopadhyay/elix-ide/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
