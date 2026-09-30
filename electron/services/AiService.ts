@@ -105,7 +105,7 @@ export class AiService {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: `${sysPrompt}\n\n${userPrompt}` }] }],
-                generationConfig: { temperature: 0.3, maxOutputTokens: 3000 }
+                generationConfig: { temperature: 0.3, maxOutputTokens: 4000 }
               })
             });
             if (resp.ok) {
@@ -159,7 +159,7 @@ export class AiService {
             model: activeModel,
             system: sysPrompt,
             messages: [{ role: 'user', content: userPrompt }],
-            max_tokens: 1000,
+            max_tokens: 4000,
             temperature: 0.3
           })
         });
@@ -195,7 +195,7 @@ export class AiService {
                 { role: 'user', content: userPrompt }
               ],
               temperature: 0.3,
-              max_tokens: 1000
+              max_tokens: 4000
             })
           });
 
@@ -231,7 +231,7 @@ export class AiService {
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 1000
+                max_tokens: 4000
               })
             });
             if (fbResp.ok) {
@@ -275,7 +275,7 @@ export class AiService {
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 3000
+                max_tokens: 4000
               })
             });
 
@@ -338,7 +338,7 @@ export class AiService {
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 1000
+                max_tokens: 4000
               })
             });
             if (resp.ok) {
@@ -393,7 +393,7 @@ export class AiService {
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.3,
-          max_tokens: 1000
+          max_tokens: 4000
         })
       });
 
@@ -466,34 +466,44 @@ export class AiService {
 
     // Try Live Online AI for Agent prompt if configured
     if ((effectiveConfig.apiKey && effectiveConfig.apiKey.trim().length > 6) || effectiveConfig.provider === 'ollama') {
-      const sysPrompt = `You are Elix Agent, an autonomous AI coding agent like Antigravity and Claude Code. You have full workspace access.
-Project Path: ${req.projectPath}
-Active File: ${req.currentFilePath || 'None'}
-Active File Content:
-\`\`\`
-${req.currentFileContent ? req.currentFileContent.slice(0, 4000) : 'None'}
-\`\`\`
-Permission Level: ${req.permissionLevel || effectiveConfig.permissionLevel}
+      const sysPrompt = `You are Elix Agent, an elite autonomous AI coding assistant and pair programmer modeled with the precision, depth, and pro-level execution of Google DeepMind's Antigravity and Claude Code. You have full workspace and terminal access.
 
-AUTONOMOUS CAPABILITIES:
-When asked to create folders, write code, modify files, or install dependencies, perform the actions directly using these exact markdown blocks:
+WORKSPACE CONTEXT:
+• Project Root: ${req.projectPath}
+• Active File: ${req.currentFilePath || 'None'}
+• File Content (Active Buffer):
+\`\`\`
+${req.currentFileContent ? req.currentFileContent.slice(0, 5000) : 'None'}
+\`\`\`
+• Permission Level: ${req.permissionLevel || effectiveConfig.permissionLevel}
 
-1. To create a directory/folder:
+ENGINEERING PRINCIPLES (ANTIGRAVITY STYLE):
+1. **Autonomous Execution First**: Never ask the user to manually copy-paste or write files if you can execute it for them. Write full, clean, production-ready code directly.
+2. **Clear & Structured Response**:
+   - Begin with a brief, high-level summary of your diagnosis or strategy.
+   - Use clean GitHub-flavored markdown: bold headers, bulleted lists, and readable code blocks.
+   - Explain non-obvious design decisions or edge-case handling clearly without unnecessary fluff.
+3. **High Architectural Precision**: Maintain existing codebase architecture, follow modern idioms (TypeScript/React/Node/Python), and ensure zero syntax or type errors.
+
+AUTONOMOUS CAPABILITY BLOCKS (Executed directly in the user's workspace):
+Whenever your solution requires creating directories, creating/updating files, or running terminal commands, emit these exact markdown blocks:
+
+1. Create directory / folder:
 \`\`\`create_dir
-path/to/directory
+relative/or/absolute/path
 \`\`\`
 
-2. To create or write to a file:
+2. Create or write to a file (Always write complete, working file content):
 \`\`\`write_file:relative/path/to/file.ext
-[exact file content here]
+[full file content here]
 \`\`\`
 
-3. To execute terminal commands (e.g. npm install, pip install, git):
+3. Run terminal commands (e.g. installs, builds, git, tests):
 \`\`\`run_command
 command here
 \`\`\`
 
-Explain what you are doing, then use the action blocks so Elix executes them directly.`;
+State your analysis and plan in clean Antigravity style, then append the action blocks so Elix executes them immediately.`;
 
       const aiRes = await this.callLlm(effectiveConfig, sysPrompt, req.prompt);
       if (aiRes) {
