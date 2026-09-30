@@ -589,17 +589,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                       <option value="gemini">Gemini</option>
                       <option value="openrouter">OpenRouter</option>
                       <option value="nvidia">NVIDIA</option>
-                      <option value="groq">Grok</option>
+                      <option value="groq">Groq (Ultra-Fast Llama 3.3)</option>
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-white">Provider API Key</label>
+                    <div className="flex items-center justify-between max-w-md">
+                      <label className="text-xs font-semibold text-white">Provider API Key</label>
+                      <a 
+                        href={settings.aiProvider === 'groq' ? 'https://console.groq.com/keys' : settings.aiProvider === 'gemini' ? 'https://aistudio.google.com/app/apikey' : 'https://openrouter.ai/keys'} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[11px] text-[#007acc] hover:underline"
+                      >
+                        Get Free Key &rarr;
+                      </a>
+                    </div>
                     <input
                       type="password"
                       value={settings.aiApiKey}
                       onChange={e => updateSetting('aiApiKey', e.target.value)}
-                      placeholder={settings.aiProvider === 'ollama' ? 'Optional for local Ollama' : 'Enter API key'}
+                      placeholder={settings.aiProvider === 'ollama' ? 'Optional for local Ollama' : settings.aiProvider === 'groq' ? 'gsk_...' : settings.aiProvider === 'gemini' ? 'AIza...' : 'Enter API key'}
                       className="w-full max-w-md bg-[#3c3c3c] text-white text-xs px-2.5 py-1 rounded border border-[#2b2b2b] focus:outline-none focus:border-[#007acc]"
                     />
                   </div>

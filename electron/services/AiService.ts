@@ -105,7 +105,7 @@ export class AiService {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: `${sysPrompt}\n\n${userPrompt}` }] }],
-                generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+                generationConfig: { temperature: 0.3, maxOutputTokens: 3000 }
               })
             });
             if (resp.ok) {
@@ -122,9 +122,24 @@ export class AiService {
             } else if (resp.status === 429) {
               console.warn(`Gemini model ${m} rate-limited (429), auto-switching to next candidate...`);
               continue;
+            } else {
+              const errBody = await resp.text();
+              console.error(`Gemini API error (${resp.status}):`, errBody);
+              return {
+                text: `❌ Gemini API Error (${resp.status}): ${errBody}`,
+                provider: 'Google Gemini',
+                model: m
+              };
             }
-          } catch (e) {
+          } catch (e: any) {
             console.warn(`Gemini candidate ${m} error:`, e);
+            if (i === geminiCandidates.length - 1) {
+              return {
+                text: `❌ Gemini Connection Error: ${e.message}`,
+                provider: 'Google Gemini',
+                model: m
+              };
+            }
           }
         }
         return null;
@@ -239,7 +254,7 @@ export class AiService {
       }
 
       // 4. Groq (Ultra-Fast Free Tier with Auto-Failover)
-      if (provider === 'groq') {
+      if (provider === 'groq' || (provider as string) === 'grok') {
         const groqCandidates = Array.from(new Set([rawModel || GROQ_FREE_CHAIN[0], ...GROQ_FREE_CHAIN]));
         const endpointUrl = 'https://api.groq.com/openai/v1/chat/completions';
         const headers = {
@@ -260,7 +275,7 @@ export class AiService {
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 1000
+                max_tokens: 3000
               })
             });
 
@@ -278,9 +293,24 @@ export class AiService {
             } else if (resp.status === 429) {
               console.warn(`Groq model ${m} rate limited (429), auto-switching...`);
               continue;
+            } else {
+              const errBody = await resp.text();
+              console.error(`Groq API returned error status ${resp.status}:`, errBody);
+              return {
+                text: `❌ Groq API Error (${resp.status}): ${errBody}`,
+                provider: 'Groq',
+                model: m
+              };
             }
-          } catch (e) {
+          } catch (e: any) {
             console.warn(`Groq candidate ${m} error:`, e);
+            if (i === groqCandidates.length - 1) {
+              return {
+                text: `❌ Groq Connection Error: ${e.message}`,
+                provider: 'Groq',
+                model: m
+              };
+            }
           }
         }
         return null;
@@ -385,17 +415,33 @@ export class AiService {
     const config = this.db.getAiConfig();
     const effectiveConfig = { ...config };
     
-    // Map selected model from Elix Agent model selector
-    if (req.model && req.model !== 'Auto Universal Failover') {
-      if (req.model.includes('Gemini')) {
-        effectiveConfig.provider = 'gemini';
-        effectiveConfig.model = req.model.includes('2.0') ? 'gemini-2.0-flash' : 'gemini-1.5-pro';
-      } else if (req.model.includes('Groq')) {
+    // Auto-detect provider if key format matches known provider pattern
+    const key = (effectiveConfig.apiKey || '').trim();
+    if (key.startsWith('gsk_')) {
+      effectiveConfig.provider = 'groq';
+      if (!effectiveConfig.model) effectiveConfig.model = 'llama-3.3-70b-versatile';
+    } else if (key.startsWith('AIza')) {
+      effectiveConfig.provider = 'gemini';
+      if (!effectiveConfig.model) effectiveConfig.model = 'gemini-1.5-flash';
+    } else if (key.startsWith('sk-ant-')) {
+      effectiveConfig.provider = 'anthropic';
+    } else if (key.startsWith('sk-or-')) {
+      effectiveConfig.provider = 'openrouter';
+    } else if (key.startsWith('nvapi-')) {
+      effectiveConfig.provider = 'nvidia';
+    }
+
+    // Map selected model from Elix Agent model selector ONLY if compatible
+    if (req.model && req.model !== 'Auto' && req.model !== 'Auto Universal Failover') {
+      if (req.model.includes('Groq') || req.model.includes('Grok') || key.startsWith('gsk_')) {
         effectiveConfig.provider = 'groq';
         effectiveConfig.model = 'llama-3.3-70b-versatile';
+      } else if (req.model.includes('Gemini') && !key.startsWith('gsk_')) {
+        effectiveConfig.provider = 'gemini';
+        effectiveConfig.model = req.model.includes('2.0') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
       } else if (req.model.includes('OpenRouter')) {
         effectiveConfig.provider = 'openrouter';
-        effectiveConfig.model = req.model.includes('DeepSeek') ? 'deepseek/deepseek-r1:free' : 'qwen/qwen-2.5-coder-32b-instruct:free';
+        effectiveConfig.model = req.model.includes('DeepSeek') ? 'deepseek/deepseek-r1:free' : 'meta-llama/llama-3.3-70b-instruct:free';
       } else if (req.model.includes('NVIDIA')) {
         effectiveConfig.provider = 'nvidia';
         effectiveConfig.model = 'meta/llama-3.3-70b-instruct';
@@ -574,113 +620,73 @@ Explain what you are doing, then use the action blocks so Elix executes them dir
           proposedChanges: proposedChanges.length > 0 ? proposedChanges : undefined
         };
       }
-    }
 
-    // Agent capability with multi-step plan generation and change proposals (Offline engine fallback)
-    if (promptLower.includes('create') || promptLower.includes('build') || promptLower.includes('refactor') || promptLower.includes('fix') || promptLower.includes('install')) {
-      const planSteps = [];
-      const proposedChanges = [];
-
-      // Check for folder creation intent: "create folder X" or "make directory X"
-      const folderMatch = req.prompt.match(/(?:create|make|add)\s+(?:folder|directory|dir)\s+([a-zA-Z0-9_\-\/\\]+)/i);
-      if (folderMatch && folderMatch[1]) {
-        const folderName = folderMatch[1].trim();
-        const fullDir = path.resolve(req.projectPath, folderName);
-        try {
-          if (!fs.existsSync(fullDir)) fs.mkdirSync(fullDir, { recursive: true });
-          planSteps.push({ id: `step_dir_${Date.now()}`, title: `📁 Created folder: ${folderName}`, status: 'completed' as const });
-        } catch (e: any) {
-          planSteps.push({ id: `step_dir_${Date.now()}`, title: `📁 Failed folder: ${folderName}`, status: 'failed' as const });
-        }
-      }
-
-      // Check for file creation intent: "create file X"
-      const fileMatch = req.prompt.match(/(?:create|make|add)\s+file\s+([a-zA-Z0-9_\-\/\\]+\.[a-zA-Z0-9]+)/i);
-      if (fileMatch && fileMatch[1]) {
-        const fileName = fileMatch[1].trim();
-        const fullPath = path.resolve(req.projectPath, fileName);
-        try {
-          fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-          const stubContent = fileName.endsWith('.py') 
-            ? `# ${fileName}\nprint("Hello from Elix Agent")\n` 
-            : `// ${fileName}\nexport default function component() {\n  return <div>Hello from Elix Agent</div>;\n}\n`;
-          fs.writeFileSync(fullPath, stubContent, 'utf8');
-          planSteps.push({ id: `step_file_${Date.now()}`, title: `📝 Created file: ${fileName}`, status: 'completed' as const });
-          proposedChanges.push({ filePath: fullPath, oldContent: '', newContent: stubContent, status: 'accepted' as const });
-        } catch (e: any) {
-          planSteps.push({ id: `step_file_${Date.now()}`, title: `📝 Failed to write: ${fileName}`, status: 'failed' as const });
-        }
-      }
-
-      // Check for installation intent: "install X" or "npm install X"
-      const installMatch = req.prompt.match(/(?:npm\s+i(?:nstall)?|pip\s+install|install)\s+([a-zA-Z0-9_\-@\/]+)/i);
-      if (installMatch && installMatch[1]) {
-        const pkg = installMatch[1].trim();
-        const cmd = `npm install ${pkg}`;
-        try {
-          await new Promise(resolve => exec(cmd, { cwd: req.projectPath, timeout: 60000 }, resolve));
-          planSteps.push({ id: `step_install_${Date.now()}`, title: `⚡ Installed package: ${pkg}`, status: 'completed' as const });
-        } catch (e: any) {
-          planSteps.push({ id: `step_install_${Date.now()}`, title: `⚡ Package install error: ${pkg}`, status: 'failed' as const });
-        }
-      }
-
-      if (planSteps.length === 0) {
-        planSteps.push(
-          { id: 'step_1', title: 'Analyze Project Architecture & Requirements', status: 'completed' as const },
-          { id: 'step_2', title: 'Verify Runtime & Dependency Compatibility', status: 'completed' as const },
-          { id: 'step_3', title: 'Synthesize Optimized Code Changes', status: 'completed' as const },
-          { id: 'step_4', title: 'Propose Reviewable Changes (Awaiting Approval)', status: 'pending' as const }
-        );
-      }
-
-      if (req.currentFilePath && req.currentFileContent !== undefined && proposedChanges.length === 0) {
-        let updatedContent = req.currentFileContent;
-        if (req.currentFilePath.endsWith('.py')) {
-          updatedContent += `\n\n# AI-Optimized Enhancement\ndef elix_health_check():\n    return {"status": "ok", "mode": "accelerated"}\n`;
-        } else if (req.currentFilePath.endsWith('.jsx') || req.currentFilePath.endsWith('.tsx') || req.currentFilePath.endsWith('.js')) {
-          updatedContent = updatedContent.replace(
-            /<\/div>\s*<\/div>\s*\);\s*}/,
-            `  <div className="mt-4 p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs font-mono">\n          ✦ AI-Assisted Component Verified\n        </div>\n      </div>\n    </div>\n  );\n}`
-          );
-        }
-
-        proposedChanges.push({
-          filePath: req.currentFilePath,
-          oldContent: req.currentFileContent,
-          newContent: updatedContent,
-          status: 'pending' as const
-        });
-      }
-
-      this.db.recordActivity({
-        type: 'ai_task_completed',
-        category: 'ai',
-        description: `AI Agent executed actions for "${req.prompt.slice(0, 40)}..."`
-      });
-
+      // If online LLM was configured but returned no result
       return {
         id: `msg_${Date.now()}`,
         sender: 'assistant',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        content: `I've analyzed your project and executed the actions for: "${req.prompt}".\n\n` +
-          `• Workspace: \`${req.projectPath}\`\n` +
-          `• Actions Executed: **${planSteps.length} step(s)** completed.`,
-        isPlan: true,
-        planSteps,
-        proposedChanges
+        content: `❌ **AI Connection Failure:**\n\nUnable to obtain a response from **${effectiveConfig.provider.toUpperCase()}** (${effectiveConfig.model || 'default model'}).\n\n**Troubleshooting steps:**\n• **API Key**: Verify your API key is correctly pasted in **Settings (Ctrl+,) > AI Configuration**.\n• **Provider**: If using a key starting with \`gsk_\`, ensure the provider is set to **Groq**.\n• **Network**: Check your internet connection or proxy settings.\n• **Free Keys**: Groq keys are free at [console.groq.com/keys](https://console.groq.com/keys).`,
+        isPlan: false
       };
     }
 
-    // General AI coding conversation fallback
+    // Explicit file or folder scaffolding commands when offline / without key
+    const folderMatch = req.prompt.match(/(?:create|make|add)\s+(?:folder|directory|dir)\s+([a-zA-Z0-9_\-\/\\]+)/i);
+    if (folderMatch && folderMatch[1]) {
+      const folderName = folderMatch[1].trim();
+      const fullDir = path.resolve(req.projectPath, folderName);
+      try {
+        if (!fs.existsSync(fullDir)) fs.mkdirSync(fullDir, { recursive: true });
+        return {
+          id: `msg_${Date.now()}`,
+          sender: 'assistant',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          content: `📁 Created folder: \`${folderName}\``
+        };
+      } catch (e: any) {
+        return {
+          id: `msg_${Date.now()}`,
+          sender: 'assistant',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          content: `❌ Failed to create folder: \`${folderName}\` (${e.message})`
+        };
+      }
+    }
+
+    const fileMatch = req.prompt.match(/(?:create|make|add)\s+file\s+([a-zA-Z0-9_\-\/\\]+\.[a-zA-Z0-9]+)/i);
+    if (fileMatch && fileMatch[1]) {
+      const fileName = fileMatch[1].trim();
+      const fullPath = path.resolve(req.projectPath, fileName);
+      try {
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        const stubContent = fileName.endsWith('.py') 
+          ? `# ${fileName}\n` 
+          : `// ${fileName}\n`;
+        fs.writeFileSync(fullPath, stubContent, 'utf8');
+        return {
+          id: `msg_${Date.now()}`,
+          sender: 'assistant',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          content: `📝 Created file: \`${fileName}\``
+        };
+      } catch (e: any) {
+        return {
+          id: `msg_${Date.now()}`,
+          sender: 'assistant',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          content: `❌ Failed to create file: \`${fileName}\` (${e.message})`
+        };
+      }
+    }
+
+    // No API key configured onboarding response
     return {
       id: `msg_${Date.now()}`,
       sender: 'assistant',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      content: `I am your Elix AI Coding Agent. I have full context of your active workspace.\n\n` +
-        `• Permission Level: **${config.permissionLevel.replace('_', ' ').toUpperCase()}**\n` +
-        `• Active Provider: **${config.provider.toUpperCase()}**\n\n` +
-        `💡 *Tip: You can configure free providers like Google Gemini, Groq, OpenRouter, or NVIDIA NIM in Settings (Ctrl+,). With OpenRouter or Groq, models auto-switch if a limit is reached!*`
+      content: `🔑 **AI Provider Key Required**\n\nTo chat with Elix Agent and generate code, connect a free provider key in **Settings (Ctrl+,) > AI Configuration**:\n\n• **Groq (Recommended - Free, Ultra-Fast 500+ tokens/s)**: [console.groq.com/keys](https://console.groq.com/keys) *(starts with \`gsk_\`)*\n• **Google Gemini (Free tier)**: [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) *(starts with \`AIza\`)*\n• **OpenRouter (Free tier models)**: [openrouter.ai/keys](https://openrouter.ai/keys)\n• **Ollama (100% Offline)**: Run models locally with zero API key!`,
+      isPlan: false
     };
   }
 

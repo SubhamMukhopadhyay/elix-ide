@@ -1157,7 +1157,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ initialCategory, onO
                     <option value="gemini">Gemini</option>
                     <option value="openrouter">OpenRouter</option>
                     <option value="nvidia">NVIDIA</option>
-                    <option value="groq">Grok</option>
+                    <option value="groq">Groq (Ultra-Fast Llama 3.3)</option>
                   </select>
                 </div>
 
@@ -1169,12 +1169,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ initialCategory, onO
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     <a 
+                      href="https://console.groq.com/keys" 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-[#007acc] hover:underline flex items-center gap-1 font-medium"
+                    >
+                      • Groq (Free API Key - starts with gsk_)
+                    </a>
+                    <a 
                       href="https://aistudio.google.com/app/apikey" 
                       target="_blank" 
                       rel="noreferrer"
                       className="text-[#007acc] hover:underline flex items-center gap-1"
                     >
-                      • Gemini (Free API Key)
+                      • Gemini (Free API Key - starts with AIza)
                     </a>
                     <a 
                       href="https://openrouter.ai/keys" 
@@ -1191,14 +1199,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ initialCategory, onO
                       className="text-[#007acc] hover:underline flex items-center gap-1"
                     >
                       • NVIDIA (Free API Key)
-                    </a>
-                    <a 
-                      href="https://console.groq.com/keys" 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="text-[#007acc] hover:underline flex items-center gap-1"
-                    >
-                      • Grok (Free API Key)
                     </a>
                   </div>
                 </div>

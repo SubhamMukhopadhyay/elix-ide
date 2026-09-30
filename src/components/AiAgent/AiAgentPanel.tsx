@@ -53,13 +53,16 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
   const [inputText, setInputText] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [permissionLevel, setPermissionLevel] = useState<AiPermissionLevel>('full_agent');
-  const [activeModel, setActiveModel] = useState<string>('Gemini');
-  const [showModelMenu, setShowModelMenu] = useState<boolean>(false);
-  const [showHistoryMenu, setShowHistoryMenu] = useState<boolean>(false);
-  const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
+  const [activeModel, setActiveModel] = useState<string>('Groq');
+  const [activePopover, setActivePopover] = useState<'model' | 'history' | 'more' | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+
+  const togglePopover = (popover: 'model' | 'history' | 'more', e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActivePopover(prev => (prev === popover ? null : popover));
+  };
 
   // Audio Recording & Dictation Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -227,25 +230,36 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
   // Close popovers on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
-      if (
-        modelMenuRef.current && 
-        !modelMenuRef.current.contains(e.target as Node) &&
-        !modelButtonRef.current?.contains(e.target as Node)
-      ) {
-        setShowModelMenu(false);
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-popover-root]')) {
+        setActivePopover(null);
       }
-      if (historyMenuRef.current && !historyMenuRef.current.contains(e.target as Node)) {
-        setShowHistoryMenu(false);
-      }
-      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
-        setShowMoreMenu(false);
-      }
-      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(target)) {
         setMentionMenuType(null);
       }
     };
-    window.addEventListener('mousedown', handleOutsideClick);
-    return () => window.removeEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  // Sync activeModel with saved AI configuration on mount
+  useEffect(() => {
+    if (window.elix?.getAiConfig) {
+      window.elix.getAiConfig().then((cfg: any) => {
+        if (cfg) {
+          const key = (cfg.apiKey || '').trim();
+          if (key.startsWith('gsk_') || cfg.provider === 'groq' || cfg.provider === 'grok') {
+            setActiveModel('Groq');
+          } else if (cfg.provider === 'openrouter' || key.startsWith('sk-or-')) {
+            setActiveModel('OpenRouter');
+          } else if (cfg.provider === 'nvidia' || key.startsWith('nvapi-')) {
+            setActiveModel('NVIDIA');
+          } else if (cfg.provider === 'gemini' || key.startsWith('AIza')) {
+            setActiveModel('Gemini');
+          }
+        }
+      }).catch(console.warn);
+    }
   }, []);
 
   useEffect(() => {
@@ -501,12 +515,12 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
     setInputText('');
   };
 
-  // Clean Model List: Gemini, OpenRouter, NVIDIA, Grok
+  // Clean Model List: Groq, Gemini, OpenRouter, NVIDIA
   const ELIX_MODELS = [
+    'Groq',
     'Gemini',
     'OpenRouter',
-    'NVIDIA',
-    'Grok'
+    'NVIDIA'
   ];
 
   return (
@@ -531,28 +545,28 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
           </button>
 
           {/* Sessions / History */}
-          <div className="relative">
+          <div className="relative" data-popover-root="history">
             <button 
-              onClick={() => setShowHistoryMenu(prev => !prev)}
+              onClick={(e) => togglePopover('history', e)}
               title="Conversation History" 
-              className="p-1.5 hover:bg-[var(--ide-hover-bg)] hover:text-[var(--ide-text)] rounded-md transition-colors"
+              className={`p-1.5 rounded-md transition-colors ${activePopover === 'history' ? 'bg-[var(--ide-hover-bg)] text-[var(--ide-text)]' : 'hover:bg-[var(--ide-hover-bg)] hover:text-[var(--ide-text)]'}`}
             >
               <Clock size={14} />
             </button>
 
-            {showHistoryMenu && (
+            {activePopover === 'history' && (
               <div 
                 ref={historyMenuRef}
-                className="absolute right-0 top-full mt-1.5 z-50 w-64 bg-[var(--ide-panel-bg)] border border-[var(--ide-border)] rounded-xl shadow-2xl p-1.5 text-xs select-none text-[var(--ide-text)]"
+                className="absolute right-0 top-full mt-1.5 z-50 w-64 bg-[var(--ide-panel-bg)] border border-[var(--ide-border)] rounded-xl shadow-2xl p-1.5 text-xs select-none text-[var(--ide-text)] animate-in fade-in zoom-in-95 duration-100"
               >
                 <div className="px-3 py-1.5 text-[10px] text-[var(--ide-text-muted)] font-semibold uppercase tracking-wider border-b border-[var(--ide-border)] mb-1 flex items-center justify-between">
                   <span>Chat Sessions</span>
-                  <button onClick={handleNewChat} className="text-[#3b82f6] hover:underline normal-case font-normal">+ New</button>
+                  <button onClick={() => { handleNewChat(); setActivePopover(null); }} className="text-[#3b82f6] hover:underline normal-case font-normal">+ New</button>
                 </div>
                 {sessions.map(s => (
                   <div 
                     key={s.id}
-                    onClick={() => setShowHistoryMenu(false)}
+                    onClick={() => setActivePopover(null)}
                     className="px-2.5 py-1.5 rounded-lg hover:bg-[var(--ide-hover-bg)] cursor-pointer flex items-center justify-between text-[var(--ide-text)]"
                   >
                     <span className="truncate max-w-[160px] text-[11px]">{s.title}</span>
@@ -564,19 +578,19 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
           </div>
 
           {/* More Options */}
-          <div className="relative">
+          <div className="relative" data-popover-root="more">
             <button 
-              onClick={() => setShowMoreMenu(prev => !prev)}
+              onClick={(e) => togglePopover('more', e)}
               title="More Actions" 
-              className="p-1.5 hover:bg-[var(--ide-hover-bg)] hover:text-[var(--ide-text)] rounded-md transition-colors"
+              className={`p-1.5 rounded-md transition-colors ${activePopover === 'more' ? 'bg-[var(--ide-hover-bg)] text-[var(--ide-text)]' : 'hover:bg-[var(--ide-hover-bg)] hover:text-[var(--ide-text)]'}`}
             >
               <MoreHorizontal size={14} />
             </button>
 
-            {showMoreMenu && (
+            {activePopover === 'more' && (
               <div 
                 ref={moreMenuRef}
-                className="absolute right-0 top-full mt-1.5 z-50 w-52 bg-[var(--ide-panel-bg)] border border-[var(--ide-border)] rounded-xl shadow-2xl p-1 text-xs select-none text-[var(--ide-text)]"
+                className="absolute right-0 top-full mt-1.5 z-50 w-52 bg-[var(--ide-panel-bg)] border border-[var(--ide-border)] rounded-xl shadow-2xl p-1 text-xs select-none text-[var(--ide-text)] animate-in fade-in zoom-in-95 duration-100"
               >
                 <div className="px-3 py-1 text-[10px] text-[var(--ide-text-muted)] font-semibold uppercase tracking-wider">
                   Permission Level
@@ -588,7 +602,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                 ].map(p => (
                   <button
                     key={p.id}
-                    onClick={() => { setPermissionLevel(p.id as any); setShowMoreMenu(false); }}
+                    onClick={() => { setPermissionLevel(p.id as any); setActivePopover(null); }}
                     className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-[var(--ide-hover-bg)] flex items-center justify-between text-[var(--ide-text)]"
                   >
                     <span>{p.label}</span>
@@ -599,7 +613,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                 <button
                   onClick={() => {
                     handleNewChat();
-                    setShowMoreMenu(false);
+                    setActivePopover(null);
                   }}
                   className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-500 flex items-center gap-1.5"
                 >
@@ -870,11 +884,11 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
               </button>
 
               {/* Elix Model Picker Pill & Dropdown */}
-              <div className="relative">
+              <div className="relative" data-popover-root="model">
                 <button
                   ref={modelButtonRef}
                   type="button"
-                  onClick={() => setShowModelMenu(prev => !prev)}
+                  onClick={(e) => togglePopover('model', e)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--ide-hover-bg)] hover:opacity-90 text-[var(--ide-text)] text-xs font-medium border border-[var(--ide-border)] transition-colors"
                 >
                   <span className="truncate max-w-[140px] text-[11px]">{activeModel}</span>
@@ -882,7 +896,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                 </button>
 
                 {/* Clean Model Popover positioned on left side with Toggle */}
-                {showModelMenu && (
+                {activePopover === 'model' && (
                   <div
                     ref={modelMenuRef}
                     onClick={(e) => e.stopPropagation()}
@@ -901,7 +915,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                           type="button"
                           onClick={() => {
                             setActiveModel(m);
-                            setShowModelMenu(false);
+                            setActivePopover(null);
                           }}
                           className={`w-full px-3 py-1.5 rounded-xl flex items-center justify-between text-left transition-colors ${
                             activeModel === m 
@@ -923,7 +937,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
                       <button 
                         type="button"
                         onClick={() => {
-                          setShowModelMenu(false);
+                          setActivePopover(null);
                           window.dispatchEvent(new CustomEvent('open-settings', { detail: { category: 'ai' } }));
                         }}
                         className="text-[#3b82f6] hover:underline cursor-pointer inline-block mt-0.5 text-left text-[11px]"
