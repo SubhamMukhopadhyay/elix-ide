@@ -582,14 +582,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                         if (prov === 'gemini') updateSetting('aiModel', 'gemini-1.5-flash');
                         else if (prov === 'openrouter') updateSetting('aiModel', 'deepseek/deepseek-r1:free');
                         else if (prov === 'nvidia') updateSetting('aiModel', 'meta/llama-3.3-70b-instruct');
-                        else if (prov === 'groq') updateSetting('aiModel', 'llama-3.3-70b-versatile');
+                        else if (prov === 'groq') updateSetting('aiModel', 'openai/gpt-oss-120b');
                       }}
                       className="w-72 bg-[#3c3c3c] text-white text-xs px-2.5 py-1 rounded border border-[#2b2b2b] focus:outline-none focus:border-[#007acc]"
                     >
                       <option value="gemini">Gemini</option>
                       <option value="openrouter">OpenRouter</option>
                       <option value="nvidia">NVIDIA</option>
-                      <option value="groq">Groq (Ultra-Fast Llama 3.3)</option>
+                      <option value="groq">Groq (Ultra-Fast 120B / Free Tier)</option>
                     </select>
                   </div>
 

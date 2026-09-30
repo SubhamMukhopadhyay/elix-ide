@@ -1150,14 +1150,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ initialCategory, onO
                       if (prov === 'gemini') updateSetting('aiModel', 'gemini-1.5-flash');
                       else if (prov === 'openrouter') updateSetting('aiModel', 'deepseek/deepseek-r1:free');
                       else if (prov === 'nvidia') updateSetting('aiModel', 'meta/llama-3.3-70b-instruct');
-                      else if (prov === 'groq') updateSetting('aiModel', 'llama-3.3-70b-versatile');
+                      else if (prov === 'groq') updateSetting('aiModel', 'openai/gpt-oss-120b');
                     }}
                     className="bg-[var(--ide-input-bg)] text-[var(--ide-text)] px-3 py-1.5 rounded border border-[var(--ide-input-border)] outline-none"
                   >
                     <option value="gemini">Gemini</option>
                     <option value="openrouter">OpenRouter</option>
                     <option value="nvidia">NVIDIA</option>
-                    <option value="groq">Groq (Ultra-Fast Llama 3.3)</option>
+                    <option value="groq">Groq (Ultra-Fast 120B / Free Tier)</option>
                   </select>
                 </div>
 

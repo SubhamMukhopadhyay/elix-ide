@@ -40,8 +40,13 @@ const OPENROUTER_FREE_CHAIN = [
 ];
 
 const GROQ_FREE_CHAIN = [
+  'openai/gpt-oss-120b',
+  'qwen/qwen3.8-27b',
+  'openai/gpt-oss-20b',
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
+  'llama3-70b-8192',
+  'llama3-8b-8192',
   'mixtral-8x7b-32768',
   'gemma2-9b-it'
 ];
@@ -68,6 +73,7 @@ export interface LlmResult {
 export class AiService {
   private static instance: AiService;
   private db: DatabaseService;
+  private groqModelsCache: { timestamp: number; models: string[] } | null = null;
 
   private constructor() {
     this.db = DatabaseService.getInstance();
@@ -78,6 +84,40 @@ export class AiService {
       AiService.instance = new AiService();
     }
     return AiService.instance;
+  }
+
+  /**
+   * Dynamically query active Groq models for this specific API key
+   * to ensure no deprecated or retired models cause a 404.
+   */
+  private async getAvailableGroqModels(apiKey: string): Promise<string[]> {
+    if (this.groqModelsCache && Date.now() - this.groqModelsCache.timestamp < 3600000) {
+      return this.groqModelsCache.models;
+    }
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const models = (data.data || [])
+          .filter((m: any) => m.active && !m.id.includes('whisper') && !m.id.includes('guard') && !m.id.includes('orpheus'))
+          .map((m: any) => m.id);
+        if (models.length > 0) {
+          const prioritized = [
+            'openai/gpt-oss-120b',
+            'qwen/qwen3.8-27b',
+            'openai/gpt-oss-20b',
+            ...models.filter((id: string) => !['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'].includes(id))
+          ];
+          this.groqModelsCache = { timestamp: Date.now(), models: prioritized };
+          return prioritized;
+        }
+      }
+    } catch (e) {
+      console.warn('Dynamic Groq models fetch error, using fallback chain:', e);
+    }
+    return GROQ_FREE_CHAIN;
   }
 
   /**
@@ -253,9 +293,14 @@ export class AiService {
         return null;
       }
 
-      // 4. Groq (Ultra-Fast Free Tier with Auto-Failover)
+      // 4. Groq (Ultra-Fast Free Tier with Dynamic Catalog & Auto-Failover)
       if (provider === 'groq' || (provider as string) === 'grok') {
-        const groqCandidates = Array.from(new Set([rawModel || GROQ_FREE_CHAIN[0], ...GROQ_FREE_CHAIN]));
+        const dynamicModels = await this.getAvailableGroqModels(config.apiKey);
+        const groqCandidates = Array.from(new Set([
+          rawModel && rawModel !== 'llama-3.3-70b-versatile' ? rawModel : dynamicModels[0],
+          ...dynamicModels,
+          ...GROQ_FREE_CHAIN
+        ]));
         const endpointUrl = 'https://api.groq.com/openai/v1/chat/completions';
         const headers = {
           'Content-Type': 'application/json',
@@ -290,8 +335,8 @@ export class AiService {
                   wasAutoSwitched: i > 0
                 };
               }
-            } else if (resp.status === 429) {
-              console.warn(`Groq model ${m} rate limited (429), auto-switching...`);
+            } else if (resp.status === 429 || resp.status === 404 || resp.status === 400) {
+              console.warn(`Groq model ${m} returned ${resp.status}, auto-switching to next candidate...`);
               continue;
             } else {
               const errBody = await resp.text();
@@ -419,7 +464,9 @@ export class AiService {
     const key = (effectiveConfig.apiKey || '').trim();
     if (key.startsWith('gsk_')) {
       effectiveConfig.provider = 'groq';
-      if (!effectiveConfig.model) effectiveConfig.model = 'llama-3.3-70b-versatile';
+      if (!effectiveConfig.model || effectiveConfig.model === 'llama-3.3-70b-versatile') {
+        effectiveConfig.model = 'openai/gpt-oss-120b';
+      }
     } else if (key.startsWith('AIza')) {
       effectiveConfig.provider = 'gemini';
       if (!effectiveConfig.model) effectiveConfig.model = 'gemini-1.5-flash';
@@ -435,7 +482,9 @@ export class AiService {
     if (req.model && req.model !== 'Auto' && req.model !== 'Auto Universal Failover') {
       if (req.model.includes('Groq') || req.model.includes('Grok') || key.startsWith('gsk_')) {
         effectiveConfig.provider = 'groq';
-        effectiveConfig.model = 'llama-3.3-70b-versatile';
+        if (!effectiveConfig.model || effectiveConfig.model === 'llama-3.3-70b-versatile') {
+          effectiveConfig.model = 'openai/gpt-oss-120b';
+        }
       } else if (req.model.includes('Gemini') && !key.startsWith('gsk_')) {
         effectiveConfig.provider = 'gemini';
         effectiveConfig.model = req.model.includes('2.0') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
